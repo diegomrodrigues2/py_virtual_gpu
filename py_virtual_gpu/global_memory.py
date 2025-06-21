@@ -27,35 +27,46 @@ class GlobalMemory:
     # Allocation helpers
     # ------------------------------------------------------------------
     def malloc(self, size: int) -> int:
-        """Allocate ``size`` bytes and return the starting offset."""
+        """Allocate ``size`` bytes and return the offset inside ``buffer``."""
+
         for idx, (offset, block_size) in enumerate(self._free_list):
             if block_size >= size:
                 self.allocations[offset] = size
-                if block_size == size:
-                    del self._free_list[idx]
-                else:
-                    self._free_list[idx] = (offset + size, block_size - size)
+                del self._free_list[idx]
+                if block_size > size:
+                    self._free_list.insert(idx, (offset + size, block_size - size))
                 return offset
         raise MemoryError("Out of global memory")
 
     def free(self, ptr: int) -> None:
-        """Free a previously allocated block at ``ptr``."""
+        """Release the block starting at ``ptr``.
+
+        Raises
+        ------
+        ValueError
+            If ``ptr`` was not previously allocated or has been freed.
+        """
+
         size = self.allocations.pop(ptr, None)
         if size is None:
-            return
+            raise ValueError("Invalid or double free")
+
         self._free_list.append((ptr, size))
-        self._free_list.sort()
+        self._free_list = self._coalesce(self._free_list)
+
+    @staticmethod
+    def _coalesce(regions: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
+        """Merge adjacent free regions."""
+
+        regs = sorted(regions)
         merged: List[Tuple[int, int]] = []
-        for off, sz in self._free_list:
-            if not merged:
-                merged.append((off, sz))
-                continue
-            last_off, last_sz = merged[-1]
-            if last_off + last_sz == off:
-                merged[-1] = (last_off, last_sz + sz)
+        for off, sz in regs:
+            if merged and merged[-1][0] + merged[-1][1] == off:
+                prev_off, prev_sz = merged.pop()
+                merged.append((prev_off, prev_sz + sz))
             else:
                 merged.append((off, sz))
-        self._free_list = merged
+        return merged
 
     # ------------------------------------------------------------------
     # Raw memory access
