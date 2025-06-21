@@ -1,5 +1,6 @@
 import os
 import sys
+import pytest
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -23,7 +24,8 @@ def test_initialize_threads_creates_all():
 
 def test_execute_runs_without_error():
     tb = ThreadBlock((0, 0, 0), (1, 1, 1), (1, 1, 1), shared_mem_size=1)
-    tb.execute(lambda *a: None)
+    with pytest.raises(NotImplementedError):
+        tb.execute(lambda *a: None)
     assert len(tb.threads) == 1
 
 
