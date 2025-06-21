@@ -47,7 +47,7 @@ class VirtualGPU:
         global_mem_size: int,
         shared_mem_size: int = 0,
         *,
-        use_pool: bool | None = None,
+        use_pool: bool = False,
         sync_on_launch: bool = False,
     ) -> None:
         """Initialize the virtual device with ``num_sms`` SMs and global memory.
@@ -58,6 +58,15 @@ class VirtualGPU:
             Number of streaming multiprocessors simulated.
         global_mem_size:
             Size of the global memory space in bytes/words.
+        shared_mem_size:
+            Size of the per-block shared memory in bytes.
+        use_pool:
+            If ``True`` a :class:`multiprocessing.Pool` with ``num_sms`` workers
+            will be created and each :class:`ThreadBlock` scheduled to it for
+            execution.
+        sync_on_launch:
+            When ``True`` calls :meth:`synchronize` automatically at the end of
+            :meth:`launch_kernel`.
         """
         self.sms: List[StreamingMultiprocessor] = [
             StreamingMultiprocessor(i, shared_mem_size, 64)
@@ -65,7 +74,7 @@ class VirtualGPU:
         ]
         self.global_memory: GlobalMemory = GlobalMemory(global_mem_size)
         self.shared_mem_size: int = shared_mem_size
-        self.use_pool: bool = bool(use_pool)
+        self.use_pool: bool = use_pool
         self.sync_on_launch: bool = sync_on_launch
         self.next_sm: int = 0
         self.pool: Optional[Pool] = Pool(processes=num_sms) if self.use_pool else None
@@ -187,6 +196,13 @@ class VirtualGPU:
             Dimension of each block expressed as ``(x, y, z)``.
         args:
             Extra arguments forwarded to ``kernel_func``.
+
+        Notes
+        -----
+        If ``use_pool`` was enabled on this :class:`VirtualGPU`, each
+        :class:`ThreadBlock` is scheduled through ``Pool.apply_async``; otherwise
+        blocks are dispatched to available SMs or executed synchronously when no
+        SMs are present.
         """
 
         gx, gy, gz = (list(grid_dim) + [1, 1, 1])[:3]
@@ -224,7 +240,11 @@ class VirtualGPU:
             self.synchronize()
 
     def synchronize(self) -> None:
-        """Wait for all queued blocks to complete execution."""
+        """Wait for all queued blocks to complete execution.
+
+        If a ``multiprocessing.Pool`` is active, it is closed and joined before
+        draining the SM queues.
+        """
 
         if self.pool is not None:
             self.pool.close()
