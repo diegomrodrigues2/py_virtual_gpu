@@ -7,7 +7,7 @@ from typing import List, Any, Tuple, Optional
 
 # Placeholder imports for yet-to-be-implemented classes.
 from .global_memory import GlobalMemory  # type: ignore  # noqa: F401
-from .sm import StreamingMultiprocessor  # type: ignore  # noqa: F401
+from .streaming_multiprocessor import StreamingMultiprocessor  # type: ignore  # noqa: F401
 from .threadblock import ThreadBlock  # type: ignore  # noqa: F401
 
 
