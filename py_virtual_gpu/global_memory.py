@@ -81,6 +81,95 @@ class GlobalMemory:
         with self.lock:
             self.buffer[ptr : ptr + len(data)] = data
 
+    # ------------------------------------------------------------------
+    # Atomic operations
+    # ------------------------------------------------------------------
+    def atomic_add(self, ptr: int, value: int, num_bytes: int = 4) -> int:
+        """Atomically add ``value`` to integer at ``ptr``."""
+
+        if ptr < 0 or ptr + num_bytes > self.size:
+            raise IndexError("GlobalMemory atomic out of bounds")
+        with self.lock:
+            raw = memoryview(self.buffer)[ptr : ptr + num_bytes].tobytes()
+            old = int.from_bytes(raw, byteorder="little", signed=True)
+            new = old + value
+            self.buffer[ptr : ptr + num_bytes] = new.to_bytes(
+                num_bytes, byteorder="little", signed=True
+            )
+            return old
+
+    def atomic_sub(self, ptr: int, value: int, num_bytes: int = 4) -> int:
+        """Atomically subtract ``value`` from integer at ``ptr``."""
+
+        if ptr < 0 or ptr + num_bytes > self.size:
+            raise IndexError("GlobalMemory atomic out of bounds")
+        with self.lock:
+            raw = memoryview(self.buffer)[ptr : ptr + num_bytes].tobytes()
+            old = int.from_bytes(raw, byteorder="little", signed=True)
+            new = old - value
+            self.buffer[ptr : ptr + num_bytes] = new.to_bytes(
+                num_bytes, byteorder="little", signed=True
+            )
+            return old
+
+    def atomic_cas(
+        self, ptr: int, expected: int, new: int, num_bytes: int = 4
+    ) -> bool:
+        """Compare-and-swap value at ``ptr``."""
+
+        if ptr < 0 or ptr + num_bytes > self.size:
+            raise IndexError("GlobalMemory atomic out of bounds")
+        with self.lock:
+            raw = memoryview(self.buffer)[ptr : ptr + num_bytes].tobytes()
+            current = int.from_bytes(raw, byteorder="little", signed=True)
+            if current == expected:
+                self.buffer[ptr : ptr + num_bytes] = new.to_bytes(
+                    num_bytes, byteorder="little", signed=True
+                )
+                return True
+            return False
+
+    def atomic_max(self, ptr: int, value: int, num_bytes: int = 4) -> int:
+        """Atomically store ``max(current, value)`` at ``ptr``."""
+
+        if ptr < 0 or ptr + num_bytes > self.size:
+            raise IndexError("GlobalMemory atomic out of bounds")
+        with self.lock:
+            raw = memoryview(self.buffer)[ptr : ptr + num_bytes].tobytes()
+            old = int.from_bytes(raw, byteorder="little", signed=True)
+            m = max(old, value)
+            self.buffer[ptr : ptr + num_bytes] = m.to_bytes(
+                num_bytes, byteorder="little", signed=True
+            )
+            return old
+
+    def atomic_min(self, ptr: int, value: int, num_bytes: int = 4) -> int:
+        """Atomically store ``min(current, value)`` at ``ptr``."""
+
+        if ptr < 0 or ptr + num_bytes > self.size:
+            raise IndexError("GlobalMemory atomic out of bounds")
+        with self.lock:
+            raw = memoryview(self.buffer)[ptr : ptr + num_bytes].tobytes()
+            old = int.from_bytes(raw, byteorder="little", signed=True)
+            m = min(old, value)
+            self.buffer[ptr : ptr + num_bytes] = m.to_bytes(
+                num_bytes, byteorder="little", signed=True
+            )
+            return old
+
+    def atomic_exchange(self, ptr: int, value: int, num_bytes: int = 4) -> int:
+        """Atomically replace value at ``ptr`` and return old value."""
+
+        if ptr < 0 or ptr + num_bytes > self.size:
+            raise IndexError("GlobalMemory atomic out of bounds")
+        with self.lock:
+            raw = memoryview(self.buffer)[ptr : ptr + num_bytes].tobytes()
+            old = int.from_bytes(raw, byteorder="little", signed=True)
+            self.buffer[ptr : ptr + num_bytes] = value.to_bytes(
+                num_bytes, byteorder="little", signed=True
+            )
+            return old
+
     def memcpy(self, dest_ptr: int, src: int | bytes, size: int, direction: str) -> bytes | None:
         """Copy memory between host and device.
 
