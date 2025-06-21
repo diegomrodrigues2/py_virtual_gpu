@@ -57,3 +57,31 @@ def test_fragmentation_stress_keeps_total_free():
             gpu.free(p)
     end_free = sum(sz for _, sz in gpu.global_memory._free_list)
     assert start_free == end_free
+
+
+def test_memcpy_host_to_device_and_back():
+    gpu = VirtualGPU(0, 32)
+    host_buf = bytes(range(8))
+    ptr = gpu.malloc(8)
+    gpu.memcpy_host_to_device(ptr, host_buf, 8)
+    assert gpu.global_memory.read(ptr.offset, 8) == host_buf
+
+    out = bytearray(8)
+    gpu.memcpy_device_to_host(out, ptr, 8)
+    assert out == host_buf
+
+
+def test_memcpy_validation_errors():
+    gpu = VirtualGPU(0, 16)
+    ptr = gpu.malloc(4)
+
+    with pytest.raises(ValueError):
+        gpu.memcpy_host_to_device(ptr, b"\x00\x01", 4)
+
+    with pytest.raises(ValueError):
+        gpu.memcpy_device_to_host(bytearray(2), ptr, 4)
+
+    gpu.free(ptr)
+    with pytest.raises(ValueError):
+        gpu.memcpy_host_to_device(ptr, b"abcd", 4)
+

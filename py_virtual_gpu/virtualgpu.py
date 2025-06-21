@@ -53,6 +53,79 @@ class VirtualGPU:
         self.global_memory.free(ptr.offset)
         self._active_ptrs.remove(ptr.offset)
 
+    # ------------------------------------------------------------------
+    # Data transfer helpers
+    # ------------------------------------------------------------------
+    def memcpy_host_to_device(
+        self,
+        dest_ptr: DevicePointer,
+        src: bytes | bytearray | memoryview,
+        size: int,
+    ) -> None:
+        """Copy ``size`` bytes from host ``src`` into device memory ``dest_ptr``.
+
+        Parameters
+        ----------
+        dest_ptr:
+            Destination pointer inside the device memory.
+        src:
+            Buffer residing on the host. Must contain at least ``size`` bytes.
+        size:
+            Number of bytes to transfer.
+
+        Raises
+        ------
+        TypeError
+            If ``dest_ptr`` is not a :class:`DevicePointer`.
+        ValueError
+            If ``dest_ptr`` is invalid or ``src`` is smaller than ``size``.
+        """
+
+        if not isinstance(dest_ptr, DevicePointer):
+            raise TypeError("dest_ptr must be a DevicePointer")
+        if dest_ptr.offset not in self._active_ptrs:
+            raise ValueError("Invalid device pointer")
+        if size < 0 or len(src) < size:
+            raise ValueError("Host buffer too small for memcpy_host_to_device")
+
+        data = bytes(src[:size])
+        self.global_memory.write(dest_ptr.offset, data)
+
+    def memcpy_device_to_host(
+        self,
+        dest: bytearray | memoryview,
+        src_ptr: DevicePointer,
+        size: int,
+    ) -> None:
+        """Copy ``size`` bytes from ``src_ptr`` in device memory into host ``dest``.
+
+        Parameters
+        ----------
+        dest:
+            Host buffer that will receive the data.
+        src_ptr:
+            Pointer to the source region in device memory.
+        size:
+            Number of bytes to transfer.
+
+        Raises
+        ------
+        TypeError
+            If ``src_ptr`` is not a :class:`DevicePointer`.
+        ValueError
+            If ``src_ptr`` is invalid or ``dest`` is smaller than ``size``.
+        """
+
+        if not isinstance(src_ptr, DevicePointer):
+            raise TypeError("src_ptr must be a DevicePointer")
+        if src_ptr.offset not in self._active_ptrs:
+            raise ValueError("Invalid device pointer")
+        if size < 0 or len(dest) < size:
+            raise ValueError("Host buffer too small for memcpy_device_to_host")
+
+        data = self.global_memory.read(src_ptr.offset, size)
+        dest[:size] = data
+
     def memcpy(self, dest: Any, src: Any, size: int, direction: str) -> None:
         """Copy data between host and device according to ``direction``."""
 
