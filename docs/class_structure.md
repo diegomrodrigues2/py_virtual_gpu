@@ -54,3 +54,18 @@ A implementação detalhada destas classes e de suas APIs será tratada nas **is
 - `execute(kernel_func, *args)`: executa a função do kernel com os argumentos fornecidos.
 - `read_write_memory(...)`: operações utilitárias para acessar a memória global ou compartilhada conforme necessário.
 
+
+## Decorador `@kernel` e contexto
+
+Essas funcoes facilitam o despacho de *kernels* escritos em Python.
+
+- `kernel`: decorador que cria um objeto ``KernelFunction`` a partir da funcao original.
+- `VirtualGPU.set_current(gpu)` e `VirtualGPU.get_current()`: definem e recuperam o dispositivo ativo que recebera as execucoes.
+- `KernelFunction.__call__`: invoca ``VirtualGPU.launch_kernel`` usando ``grid_dim`` e ``block_dim``.
+
+## `Instruction` e `SIMTStack`
+
+Componentes de apoio para o modelo SIMT e tratamento de divergencia.
+
+- `Instruction`: representa uma instrucao simplificada com opcode e operandos.
+- `SIMTStack`: mantem mascaras de threads e PCs de reconvergencia durante a execucao de um warp.
