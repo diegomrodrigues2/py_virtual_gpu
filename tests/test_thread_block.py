@@ -22,11 +22,19 @@ def test_initialize_threads_creates_all():
     assert len(tb.threads) == 4
 
 
-def test_execute_runs_without_error():
-    tb = ThreadBlock((0, 0, 0), (1, 1, 1), (1, 1, 1), shared_mem_size=1)
-    with pytest.raises(NotImplementedError):
-        tb.execute(lambda *a: None)
-    assert len(tb.threads) == 1
+def test_execute_invokes_kernel_for_each_thread():
+    tb = ThreadBlock((0, 0, 0), (2, 1, 1), (1, 1, 1), shared_mem_size=1)
+    called = []
+
+    def kernel(tidx, bidx, bdim, gdim, value):
+        called.append((tidx, bidx, value))
+
+    tb.execute(kernel, 42)
+
+    assert len(tb.threads) == 2
+    assert len(called) == 2
+    expected = [((0, 0, 0), (0, 0, 0), 42), ((1, 0, 0), (0, 0, 0), 42)]
+    assert called == expected
 
 
 def test_repr_contains_info():
