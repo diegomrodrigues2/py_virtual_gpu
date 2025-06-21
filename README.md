@@ -27,3 +27,32 @@ graph TD
 
 O `VirtualGPU` distribui blocks para os SMs, que por sua vez instanciam warps e threads para executar o kernel.
 
+
+## Funcionalidades
+
+- API de gerenciamento de memoria (`malloc`, `free`).
+- Copias entre host e dispositivo por `memcpy_host_to_device` e `memcpy_device_to_host`.
+- Decorador `@kernel` que permite executar funcoes Python como kernels.
+- Lançamento de kernel via `launch_kernel` com exposicao de `threadIdx` e `blockIdx`.
+
+## Exemplo rapido
+
+```python
+from py_virtual_gpu import VirtualGPU, kernel
+
+gpu = VirtualGPU(num_sms=1, global_mem_size=64)
+VirtualGPU.set_current(gpu)
+
+@kernel(grid_dim=(1, 1, 1), block_dim=(2, 1, 1))
+def hello(threadIdx, blockIdx, blockDim, gridDim, msg):
+    print(threadIdx, blockIdx, msg)
+
+hello("Oi")
+
+ptr = gpu.malloc(4)
+gpu.memcpy_host_to_device(ptr, b"data", 4)
+buf = bytearray(4)
+gpu.memcpy_device_to_host(buf, ptr, 4)
+print(bytes(buf))
+gpu.free(ptr)
+```
