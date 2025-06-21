@@ -5,12 +5,23 @@ from __future__ import annotations
 from multiprocessing import Queue
 from queue import Queue as LocalQueue
 from typing import List, Dict
+from dataclasses import dataclass
 
 from .shared_memory import SharedMemory  # type: ignore
 from .thread_block import ThreadBlock  # type: ignore
 from .thread import Thread  # type: ignore
 from .warp import Warp
 from .dispatch import Instruction
+
+
+@dataclass
+class DivergenceEvent:
+    """Capture information about a warp divergence event."""
+
+    warp_id: int
+    pc: int
+    mask_before: List[bool]
+    mask_after: List[bool]
 
 
 class StreamingMultiprocessor:
@@ -35,6 +46,7 @@ class StreamingMultiprocessor:
             "warps_executed": 0,
             "warp_divergences": 0,
         }
+        self.divergence_log: List[DivergenceEvent] = []
 
     # ------------------------------------------------------------------
     # Execution
@@ -51,7 +63,7 @@ class StreamingMultiprocessor:
         threads = block.threads
         for idx in range(0, len(threads), self.warp_size):
             warp_threads = threads[idx : idx + self.warp_size]
-            warp = Warp(id=len(warps), threads=warp_threads)
+            warp = Warp(id=len(warps), threads=warp_threads, sm=self)
             warps.append(warp)
             self.warp_queue.put(warp)
 
@@ -104,9 +116,33 @@ class StreamingMultiprocessor:
     # ------------------------------------------------------------------
     # Divergence and counters
     # ------------------------------------------------------------------
-    def record_divergence(self, warp_threads: List[Thread]) -> None:
-        """Record a warp divergence event."""
+    def record_divergence(
+        self,
+        warp: Warp,
+        pc: int,
+        mask_before: List[bool],
+        mask_after: List[bool],
+    ) -> None:
+        """Record a warp divergence event and store it in ``divergence_log``."""
+
         self.counters["warp_divergences"] += 1
+        event = DivergenceEvent(
+            warp_id=warp.id,
+            pc=pc,
+            mask_before=mask_before.copy(),
+            mask_after=mask_after.copy(),
+        )
+        self.divergence_log.append(event)
+
+    def get_divergence_log(self) -> List[DivergenceEvent]:
+        """Return a list with all recorded divergence events."""
+
+        return list(self.divergence_log)
+
+    def clear_divergence_log(self) -> None:
+        """Clear ``divergence_log`` without resetting counters."""
+
+        self.divergence_log.clear()
 
     # ------------------------------------------------------------------
     # Maintenance helpers
@@ -117,6 +153,7 @@ class StreamingMultiprocessor:
         self.warp_queue = LocalQueue()
         for key in self.counters:
             self.counters[key] = 0
+        self.divergence_log.clear()
 
     def __repr__(self) -> str:  # pragma: no cover - debugging helper
         return (
@@ -126,4 +163,4 @@ class StreamingMultiprocessor:
         )
 
 
-__all__ = ["StreamingMultiprocessor"]
+__all__ = ["StreamingMultiprocessor", "DivergenceEvent"]

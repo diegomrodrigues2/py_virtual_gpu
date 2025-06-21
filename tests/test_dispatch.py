@@ -21,7 +21,8 @@ def test_instruction_and_simtstack_basic():
 
 
 def test_warp_issue_instruction_stub():
-    w = Warp(0, [Thread(), Thread()])
+    sm = StreamingMultiprocessor(id=0, shared_mem_size=0, max_registers_per_thread=0, warp_size=2)
+    w = Warp(0, [Thread(), Thread()], sm)
     inst = Instruction("NOP", tuple())
     with pytest.raises(NotImplementedError):
         w.issue_instruction(inst)
@@ -29,8 +30,8 @@ def test_warp_issue_instruction_stub():
 
 def test_sm_dispatch_round_robin_stub():
     sm = StreamingMultiprocessor(id=0, shared_mem_size=8, max_registers_per_thread=4, warp_size=2)
-    w1 = Warp(0, [Thread(), Thread()])
-    w2 = Warp(1, [Thread(), Thread()])
+    w1 = Warp(0, [Thread(), Thread()], sm)
+    w2 = Warp(1, [Thread(), Thread()], sm)
     sm.warp_queue.put(w1)
     sm.warp_queue.put(w2)
     with pytest.raises(NotImplementedError):
@@ -40,6 +41,6 @@ def test_sm_dispatch_round_robin_stub():
 def test_sm_record_divergence_counter():
     sm = StreamingMultiprocessor(id=1, shared_mem_size=8, max_registers_per_thread=4)
     assert sm.counters["warp_divergences"] == 0
-    sm.record_divergence([])
+    sm.record_divergence(Warp(0, [Thread(), Thread()], sm), 0, [True, True], [False, True])
     assert sm.counters["warp_divergences"] == 1
 
