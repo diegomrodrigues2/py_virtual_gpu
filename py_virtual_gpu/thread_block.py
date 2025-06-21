@@ -49,12 +49,19 @@ class ThreadBlock:
         self._initialized = True
 
     def execute(self, kernel_func: Callable[..., Any], *args: Any) -> None:
-        """Run all threads in this block (stub)."""
+        """Run all threads in this block invoking their ``run`` method."""
         self.initialize_threads(kernel_func, *args)
         for t in self.threads:
             run = getattr(t, "run", None)
             if callable(run):
-                run(kernel_func, *args)
+                params = (
+                    t.thread_idx,
+                    t.block_idx,
+                    t.block_dim,
+                    t.grid_dim,
+                    *args,
+                )
+                run(kernel_func, *params)
 
     # ------------------------------------------------------------------
     # Synchronization

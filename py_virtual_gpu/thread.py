@@ -63,12 +63,35 @@ class Thread:
     # ------------------------------------------------------------------
     # Execution
     # ------------------------------------------------------------------
-    def run(self, kernel_func: Callable[..., Any], *args: Any, **kwargs: Any) -> None:
-        """Execute ``kernel_func`` for this thread (stub)."""
+    def run(self, kernel_func: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
+        """Execute ``kernel_func`` injecting thread indices and dimensions.
 
-        raise NotImplementedError(
-            "Stub de execução de thread – implementar logicamente na issue 3.x"
-        )
+        Parameters
+        ----------
+        kernel_func:
+            Function representing the kernel to be executed.
+        *args:
+            Expected as ``(threadIdx, blockIdx, blockDim, gridDim, *user_args)``.
+
+        Returns
+        -------
+        Any
+            Whatever ``kernel_func`` returns.
+        """
+
+        if len(args) < 4:
+            raise TypeError(
+                "run expects threadIdx, blockIdx, blockDim and gridDim as the first four arguments"
+            )
+
+        threadIdx, blockIdx, blockDim, gridDim, *user_args = args
+        # expose as attributes used by the kernel
+        self.threadIdx = threadIdx
+        self.blockIdx = blockIdx
+        self.blockDim = blockDim
+        self.gridDim = gridDim
+
+        return kernel_func(threadIdx, blockIdx, blockDim, gridDim, *user_args, **kwargs)
 
     # ------------------------------------------------------------------
     # Representation helpers

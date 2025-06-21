@@ -12,7 +12,11 @@ BlockDim = Tuple[int, int, int]
 
 
 class KernelFunction:
-    """Callable wrapper that dispatches execution to :class:`VirtualGPU`."""
+    """Callable wrapper that dispatches execution to :class:`VirtualGPU`.
+
+    When invoked, the wrapped function receives ``threadIdx``, ``blockIdx``,
+    ``blockDim`` and ``gridDim`` as the first four positional arguments.
+    """
 
     def __init__(
         self,
