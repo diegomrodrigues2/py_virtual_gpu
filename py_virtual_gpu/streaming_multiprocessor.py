@@ -6,7 +6,7 @@ from multiprocessing import Queue
 from typing import List, Dict
 
 from .shared_memory import SharedMemory  # type: ignore
-from .threadblock import ThreadBlock  # type: ignore
+from .thread_block import ThreadBlock  # type: ignore
 from .thread import Thread  # type: ignore
 
 
