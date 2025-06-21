@@ -5,6 +5,7 @@ from .global_memory import GlobalMemory
 from .streaming_multiprocessor import StreamingMultiprocessor
 from .thread_block import ThreadBlock
 from .warp import Warp
+from .dispatch import Instruction, SIMTStack
 
 __all__ = [
     "VirtualGPU",
@@ -12,5 +13,7 @@ __all__ = [
     "StreamingMultiprocessor",
     "ThreadBlock",
     "Warp",
+    "Instruction",
+    "SIMTStack",
 ]
 
