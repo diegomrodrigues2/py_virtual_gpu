@@ -6,7 +6,8 @@ from multiprocessing import Queue, Pool
 from typing import List, Any, Tuple, Optional
 
 # Placeholder imports for yet-to-be-implemented classes.
-from .global_memory import GlobalMemory  # type: ignore  # noqa: F401
+from .global_memory import GlobalMemory
+from .memory import DevicePointer
 from .streaming_multiprocessor import StreamingMultiprocessor  # type: ignore  # noqa: F401
 from .thread_block import ThreadBlock  # type: ignore  # noqa: F401
 
@@ -29,28 +30,35 @@ class VirtualGPU:
             Size of the global memory space in bytes/words.
         """
         self.sms: List[StreamingMultiprocessor] = []
-        self.global_memory: Optional[GlobalMemory] = None
+        self.global_memory: GlobalMemory = GlobalMemory(global_mem_size)
         self.block_queue: Optional[Queue] = None
         self.pool: Optional[Pool] = None
-        # Initialization logic for SMs and memory will be implemented in upcoming issues.
+        self._active_ptrs: set[int] = set()
+        # Initialization logic for SMs will be implemented in upcoming issues.
 
     def malloc(self, size: int) -> Any:
-        """Allocate ``size`` units in global memory and return a device pointer."""
-        raise NotImplementedError
+        """Allocate ``size`` bytes in global memory and return a :class:`DevicePointer`."""
+
+        offset = self.global_memory.malloc(size)
+        self._active_ptrs.add(offset)
+        return DevicePointer(offset)
 
     def free(self, ptr: Any) -> None:
-        """Free a previously allocated device pointer from global memory."""
-        raise NotImplementedError
+        """Free a previously allocated :class:`DevicePointer`."""
+
+        if not isinstance(ptr, DevicePointer):
+            raise TypeError("ptr must be a DevicePointer")
+        if ptr.offset not in self._active_ptrs:
+            raise ValueError("Invalid or double free")
+        self.global_memory.free(ptr.offset)
+        self._active_ptrs.remove(ptr.offset)
 
     def memcpy(self, dest: Any, src: Any, size: int, direction: str) -> None:
-        """Copy data between host and device according to ``direction``.
+        """Copy data between host and device according to ``direction``."""
 
-        Parameters
-        ----------
-        direction:
-            Must indicate HostToDevice, DeviceToHost, or DeviceToDevice.
-        """
-        raise NotImplementedError
+        dest_ptr = dest.offset if isinstance(dest, DevicePointer) else dest
+        src_ptr = src.offset if isinstance(src, DevicePointer) else src
+        return self.global_memory.memcpy(dest_ptr, src_ptr, size, direction)
 
     def launch_kernel(
         self,
