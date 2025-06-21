@@ -40,3 +40,6 @@ Um `ThreadBlock` é um agrupamento de threads que partilham uma região de `Shar
 - `ThreadBlock.barrier_sync()` permite que as threads de um block aguardem umas
   às outras em um ponto comum, espelhando o comportamento de
   ``__syncthreads()`` do CUDA.
+- A classe `SharedMemory` expõe operações atômicas (`atomic_add`, `atomic_sub`,
+  `atomic_cas`, `atomic_max`, `atomic_min`, `atomic_exchange`) que permitem
+  atualização segura de valores compartilhados entre threads.

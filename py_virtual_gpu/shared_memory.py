@@ -52,5 +52,77 @@ class SharedMemory:
             )
             return old
 
+    def atomic_sub(self, offset: int, value: int, num_bytes: int = 4) -> int:
+        """Atomically subtract ``value`` from an integer at ``offset``."""
+
+        if offset < 0 or offset + num_bytes > self.size:
+            raise IndexError("SharedMemory atomic out of bounds")
+        with self.lock:
+            raw = memoryview(self.buffer)[offset : offset + num_bytes].tobytes()
+            old = int.from_bytes(raw, byteorder="little", signed=True)
+            new = old - value
+            self.buffer[offset : offset + num_bytes] = new.to_bytes(
+                num_bytes, byteorder="little", signed=True
+            )
+            return old
+
+    def atomic_cas(
+        self, offset: int, expected: int, new: int, num_bytes: int = 4
+    ) -> bool:
+        """Compare-and-swap integer at ``offset`` with locking."""
+
+        if offset < 0 or offset + num_bytes > self.size:
+            raise IndexError("SharedMemory atomic out of bounds")
+        with self.lock:
+            raw = memoryview(self.buffer)[offset : offset + num_bytes].tobytes()
+            current = int.from_bytes(raw, byteorder="little", signed=True)
+            if current == expected:
+                self.buffer[offset : offset + num_bytes] = new.to_bytes(
+                    num_bytes, byteorder="little", signed=True
+                )
+                return True
+            return False
+
+    def atomic_max(self, offset: int, value: int, num_bytes: int = 4) -> int:
+        """Atomically store ``max(current, value)`` and return the old value."""
+
+        if offset < 0 or offset + num_bytes > self.size:
+            raise IndexError("SharedMemory atomic out of bounds")
+        with self.lock:
+            raw = memoryview(self.buffer)[offset : offset + num_bytes].tobytes()
+            old = int.from_bytes(raw, byteorder="little", signed=True)
+            m = max(old, value)
+            self.buffer[offset : offset + num_bytes] = m.to_bytes(
+                num_bytes, byteorder="little", signed=True
+            )
+            return old
+
+    def atomic_min(self, offset: int, value: int, num_bytes: int = 4) -> int:
+        """Atomically store ``min(current, value)`` and return the old value."""
+
+        if offset < 0 or offset + num_bytes > self.size:
+            raise IndexError("SharedMemory atomic out of bounds")
+        with self.lock:
+            raw = memoryview(self.buffer)[offset : offset + num_bytes].tobytes()
+            old = int.from_bytes(raw, byteorder="little", signed=True)
+            m = min(old, value)
+            self.buffer[offset : offset + num_bytes] = m.to_bytes(
+                num_bytes, byteorder="little", signed=True
+            )
+            return old
+
+    def atomic_exchange(self, offset: int, value: int, num_bytes: int = 4) -> int:
+        """Atomically replace value at ``offset`` and return the old value."""
+
+        if offset < 0 or offset + num_bytes > self.size:
+            raise IndexError("SharedMemory atomic out of bounds")
+        with self.lock:
+            raw = memoryview(self.buffer)[offset : offset + num_bytes].tobytes()
+            old = int.from_bytes(raw, byteorder="little", signed=True)
+            self.buffer[offset : offset + num_bytes] = value.to_bytes(
+                num_bytes, byteorder="little", signed=True
+            )
+            return old
+
 
 __all__ = ["SharedMemory"]
