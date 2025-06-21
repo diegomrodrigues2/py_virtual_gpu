@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from typing import List
 
+from .dispatch import Instruction, SIMTStack
 from .thread import Thread
+
 
 
 class Warp:
@@ -12,6 +14,8 @@ class Warp:
         self.id: int = id
         self.threads: List[Thread] = threads
         self.active_mask: List[bool] = [True] * len(threads)
+        self.pc: int = 0
+        self.simt_stack = SIMTStack()
 
     # ------------------------------------------------------------------
     # Execution
@@ -22,6 +26,17 @@ class Warp:
         raise NotImplementedError(
             "Execu\u00e7\u00e3o de warp stub – implementar em 3.x"
         )
+    def issue_instruction(self, inst: Instruction) -> None:
+        """Issue ``inst`` to the active threads (conceptual stub)."""
+        self.pc += 1
+        raise NotImplementedError("Dispatch de instru\u00e7\u00e3o stub")
+
+    def handle_divergence(self, predicate: List[bool]) -> None:
+        """Handle control-flow divergence for this warp."""
+        reconv_pc = self.pc
+        self.simt_stack.push(self.active_mask, reconv_pc)
+        self.active_mask = predicate.copy()
+
 
     # ------------------------------------------------------------------
     # Representation helpers

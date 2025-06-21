@@ -16,3 +16,7 @@ def test_warp_attributes_and_execute_stub():
     assert w.active_mask == [True, True, True]
     with pytest.raises(NotImplementedError):
         w.execute()
+    from py_virtual_gpu.dispatch import Instruction
+    inst = Instruction("NOP", tuple())
+    with pytest.raises(NotImplementedError):
+        w.issue_instruction(inst)

@@ -10,6 +10,7 @@ from .shared_memory import SharedMemory  # type: ignore
 from .thread_block import ThreadBlock  # type: ignore
 from .thread import Thread  # type: ignore
 from .warp import Warp
+from .dispatch import Instruction
 
 
 class StreamingMultiprocessor:
@@ -84,6 +85,19 @@ class StreamingMultiprocessor:
             except Exception:
                 break
             warp.execute()
+            if any(warp.active_mask):
+                self.warp_queue.put(warp)
+
+    def dispatch(self) -> None:
+        """Issue one instruction to each scheduled warp in round-robin."""
+
+        while True:
+            try:
+                warp: Warp = self.warp_queue.get_nowait()
+            except Exception:
+                break
+            inst = Instruction("NOP", tuple())
+            warp.issue_instruction(inst)
             if any(warp.active_mask):
                 self.warp_queue.put(warp)
 
