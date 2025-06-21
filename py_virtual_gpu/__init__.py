@@ -4,11 +4,13 @@ from .virtualgpu import VirtualGPU
 from .global_memory import GlobalMemory
 from .streaming_multiprocessor import StreamingMultiprocessor
 from .thread_block import ThreadBlock
+from .warp import Warp
 
 __all__ = [
     "VirtualGPU",
     "GlobalMemory",
     "StreamingMultiprocessor",
     "ThreadBlock",
+    "Warp",
 ]
 
