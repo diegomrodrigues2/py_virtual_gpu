@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import Any, Callable, Dict, Tuple
+from multiprocessing import Barrier
 
 from .shared_memory import SharedMemory
 from .global_memory import GlobalMemory
@@ -46,7 +47,23 @@ class Thread:
         register_mem_size: int = 0,
         shared_mem: SharedMemory | None = None,
         global_mem: GlobalMemory | None = None,
+        barrier: Barrier | None = None,
     ) -> None:
+        """Initialize a thread context.
+
+        Parameters
+        ----------
+        thread_idx, block_idx, block_dim, grid_dim:
+            Indices and dimensions identifying this thread within the grid.
+        register_mem_size:
+            Size in bytes of the private register file.
+        shared_mem, global_mem:
+            References to the memory spaces accessible by the thread.
+        barrier:
+            Optional :class:`multiprocessing.Barrier` used for ``syncthreads``-like
+            synchronization within a block.
+        """
+
         # Indices and dimensions
         self.thread_idx: Tuple[int, int, int] = thread_idx or (0, 0, 0)
         self.block_idx: Tuple[int, int, int] = block_idx or (0, 0, 0)
@@ -59,12 +76,17 @@ class Thread:
         # Memory references
         self.shared_mem = shared_mem
         self.global_mem = global_mem
+        self.barrier = barrier
 
     # ------------------------------------------------------------------
     # Execution
     # ------------------------------------------------------------------
     def run(self, kernel_func: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
         """Execute ``kernel_func`` injecting thread indices and dimensions.
+
+        The ``self.barrier`` attribute can be used within ``kernel_func``
+        to synchronize with other threads of the same block, emulating the
+        behaviour of ``__syncthreads()`` in CUDA.
 
         Parameters
         ----------

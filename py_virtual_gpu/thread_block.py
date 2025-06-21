@@ -17,6 +17,22 @@ class ThreadBlock:
         grid_dim: Tuple[int, int, int],
         shared_mem_size: int,
     ) -> None:
+        """Create a ``ThreadBlock`` instance.
+
+        Parameters
+        ----------
+        block_idx, block_dim, grid_dim:
+            Identify the block within the grid and its dimensions.
+        shared_mem_size:
+            Size in bytes of the block's :class:`SharedMemory`.
+
+        Notes
+        -----
+        A :class:`multiprocessing.Barrier` is created with ``block_dim`` product
+        to emulate the behaviour of ``__syncthreads()``. All threads in the
+        block share this barrier via :meth:`initialize_threads`.
+        """
+
         self.block_idx: Tuple[int, int, int] = block_idx
         self.block_dim: Tuple[int, int, int] = block_dim
         self.grid_dim: Tuple[int, int, int] = grid_dim
@@ -30,7 +46,12 @@ class ThreadBlock:
     # Thread management
     # ------------------------------------------------------------------
     def initialize_threads(self, kernel_func: Callable[..., Any], *args: Any) -> None:
-        """Instantiate :class:`Thread` objects for this block."""
+        """Instantiate :class:`Thread` objects for this block.
+
+        Each created :class:`Thread` receives references to this block's
+        ``SharedMemory`` and ``Barrier`` so that a kernel can synchronize via
+        :meth:`barrier_sync`.
+        """
         if self._initialized:
             return
         for z in range(self.block_dim[2]):
@@ -67,7 +88,12 @@ class ThreadBlock:
     # Synchronization
     # ------------------------------------------------------------------
     def barrier_sync(self) -> None:
-        """Synchronize all threads in this block."""
+        """Synchronize all threads in this block.
+
+        This simply calls ``Barrier.wait`` so that every thread created by this
+        block pauses until the last one reaches the same point, mimicking the
+        semantics of ``__syncthreads()`` on a real GPU.
+        """
         self.barrier.wait()
 
     def __repr__(self) -> str:  # pragma: no cover - debugging helper

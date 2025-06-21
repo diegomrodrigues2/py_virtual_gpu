@@ -37,3 +37,6 @@ Um `ThreadBlock` é um agrupamento de threads que partilham uma região de `Shar
 - `memcpy_host_to_device`, `memcpy_device_to_host` e `memcpy` copiam dados entre CPU e GPU.
 - O decorador `@kernel` transforma funcoes Python em kernels e utiliza o dispositivo definido por `VirtualGPU.set_current`.
 - `launch_kernel` divide o grid em `ThreadBlock`s e distribui entre os SMs, expondo `threadIdx`, `blockIdx`, `blockDim` e `gridDim` para o kernel.
+- `ThreadBlock.barrier_sync()` permite que as threads de um block aguardem umas
+  às outras em um ponto comum, espelhando o comportamento de
+  ``__syncthreads()`` do CUDA.
