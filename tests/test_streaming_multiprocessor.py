@@ -89,7 +89,7 @@ def test_round_robin_reenqueues_active_warps():
 def test_reset_counters_and_queue():
     sm = StreamingMultiprocessor(id=0, shared_mem_size=128, max_registers_per_thread=16)
     sm.block_queue.put(DummyBlock(2))
-    sm.warp_queue.put(Warp(0, []))
+    sm.warp_queue.put(Warp(0, [], sm))
     sm.counters["warps_executed"] = 5
     sm.counters["warp_divergences"] = 2
     sm.reset()

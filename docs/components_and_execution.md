@@ -43,3 +43,21 @@ Um `ThreadBlock` é um agrupamento de threads que partilham uma região de `Shar
 - A classe `SharedMemory` expõe operações atômicas (`atomic_add`, `atomic_sub`,
   `atomic_cas`, `atomic_max`, `atomic_min`, `atomic_exchange`) que permitem
   atualização segura de valores compartilhados entre threads.
+
+## Monitoramento de Divergência
+
+O ``StreamingMultiprocessor`` registra eventos de divergência de warp toda vez
+que a máscara de threads ativas muda devido a um branch. Esses eventos podem ser
+obtidos com ``get_divergence_log()`` para análise posterior. O exemplo abaixo
+ilustra como construir um gráfico simples do número acumulado de divergências em
+função do ``pc`` de cada evento:
+
+```python
+log = sm.get_divergence_log()
+pcs = [e.pc for e in log]
+divs = list(range(1, len(log) + 1))
+plt.plot(pcs, divs)
+plt.xlabel("PC")
+plt.ylabel("Divergências acumuladas")
+plt.show()
+```

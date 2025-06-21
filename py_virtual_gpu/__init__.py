@@ -3,7 +3,7 @@
 from .virtualgpu import VirtualGPU
 from .global_memory import GlobalMemory
 from .memory import DevicePointer
-from .streaming_multiprocessor import StreamingMultiprocessor
+from .streaming_multiprocessor import StreamingMultiprocessor, DivergenceEvent
 from .thread_block import ThreadBlock
 from .warp import Warp
 from .dispatch import Instruction, SIMTStack
@@ -17,5 +17,6 @@ __all__ = [
     "Instruction",
     "SIMTStack",
     "DevicePointer",
+    "DivergenceEvent",
 ]
 

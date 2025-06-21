@@ -1,18 +1,22 @@
 from __future__ import annotations
 
-from typing import List
+from typing import List, TYPE_CHECKING
 
 from .dispatch import Instruction, SIMTStack
 from .thread import Thread
+
+if TYPE_CHECKING:  # pragma: no cover - circular import typing helper
+    from .streaming_multiprocessor import StreamingMultiprocessor
 
 
 
 class Warp:
     """Represent a group of threads executing in lock-step."""
 
-    def __init__(self, id: int, threads: List[Thread]):
+    def __init__(self, id: int, threads: List[Thread], sm: "StreamingMultiprocessor"):
         self.id: int = id
         self.threads: List[Thread] = threads
+        self.sm = sm
         self.active_mask: List[bool] = [True] * len(threads)
         self.pc: int = 0
         self.simt_stack = SIMTStack()
@@ -20,12 +24,26 @@ class Warp:
     # ------------------------------------------------------------------
     # Execution
     # ------------------------------------------------------------------
-    def execute(self) -> None:
-        """Execute one instruction for all active threads (stub)."""
+    def fetch_next_instruction(self) -> Instruction:
+        """Fetch the next instruction for this warp (stub)."""
 
-        raise NotImplementedError(
-            "Execu\u00e7\u00e3o de warp stub – implementar em 3.x"
-        )
+        return Instruction("NOP", tuple())
+
+    def evaluate_predicate(self, inst: Instruction) -> List[bool]:
+        """Evaluate branch predicate for ``inst`` (stub)."""
+
+        return self.active_mask.copy()
+
+    def execute(self) -> None:
+        """Execute one instruction and detect divergence conceptually."""
+
+        inst = self.fetch_next_instruction()
+        mask_before = self.active_mask.copy()
+        predicate = self.evaluate_predicate(inst)
+        if predicate != mask_before:
+            self.handle_divergence(predicate)
+            self.sm.record_divergence(self, self.pc, mask_before, self.active_mask)
+        self.pc += 1
     def issue_instruction(self, inst: Instruction) -> None:
         """Issue ``inst`` to the active threads (conceptual stub)."""
         self.pc += 1
