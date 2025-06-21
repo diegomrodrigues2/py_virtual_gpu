@@ -19,6 +19,22 @@ class VirtualGPU:
     the architectural overview in ``RESEARCH.md`` for the design rationale.
     """
 
+    _current: "VirtualGPU" | None = None
+
+    @classmethod
+    def set_current(cls, gpu: "VirtualGPU") -> None:
+        """Set ``gpu`` as the active device for kernel launches."""
+
+        cls._current = gpu
+
+    @classmethod
+    def get_current(cls) -> "VirtualGPU":
+        """Return the active device or raise ``RuntimeError`` if unset."""
+
+        if cls._current is None:
+            raise RuntimeError("No current VirtualGPU set")
+        return cls._current
+
     def __init__(self, num_sms: int, global_mem_size: int) -> None:
         """Initialize the virtual device with ``num_sms`` SMs and global memory.
 
