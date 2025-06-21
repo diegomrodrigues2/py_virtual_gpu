@@ -3,13 +3,19 @@
 from __future__ import annotations
 
 from multiprocessing import Queue, Pool
-from typing import List, Any, Tuple, Optional
+from typing import List, Any, Tuple, Optional, Callable
 
 # Placeholder imports for yet-to-be-implemented classes.
 from .global_memory import GlobalMemory
 from .memory import DevicePointer
 from .streaming_multiprocessor import StreamingMultiprocessor  # type: ignore  # noqa: F401
 from .thread_block import ThreadBlock  # type: ignore  # noqa: F401
+
+
+def _execute_block_worker(tb: ThreadBlock, func: Callable[..., Any], args: Tuple[Any, ...]) -> None:
+    """Helper for ``multiprocessing.Pool`` to execute a block."""
+
+    tb.execute(func, *args)
 
 
 class VirtualGPU:
@@ -35,7 +41,15 @@ class VirtualGPU:
             raise RuntimeError("No current VirtualGPU set")
         return cls._current
 
-    def __init__(self, num_sms: int, global_mem_size: int) -> None:
+    def __init__(
+        self,
+        num_sms: int,
+        global_mem_size: int,
+        shared_mem_size: int = 0,
+        *,
+        use_pool: bool | None = None,
+        sync_on_launch: bool = False,
+    ) -> None:
         """Initialize the virtual device with ``num_sms`` SMs and global memory.
 
         Parameters
@@ -45,12 +59,17 @@ class VirtualGPU:
         global_mem_size:
             Size of the global memory space in bytes/words.
         """
-        self.sms: List[StreamingMultiprocessor] = []
+        self.sms: List[StreamingMultiprocessor] = [
+            StreamingMultiprocessor(i, shared_mem_size, 64)
+            for i in range(num_sms)
+        ]
         self.global_memory: GlobalMemory = GlobalMemory(global_mem_size)
-        self.block_queue: Optional[Queue] = None
-        self.pool: Optional[Pool] = None
+        self.shared_mem_size: int = shared_mem_size
+        self.use_pool: bool = bool(use_pool)
+        self.sync_on_launch: bool = sync_on_launch
+        self.next_sm: int = 0
+        self.pool: Optional[Pool] = Pool(processes=num_sms) if self.use_pool else None
         self._active_ptrs: set[int] = set()
-        # Initialization logic for SMs will be implemented in upcoming issues.
 
     def malloc(self, size: int) -> Any:
         """Allocate ``size`` bytes in global memory and return a :class:`DevicePointer`."""
@@ -151,22 +170,65 @@ class VirtualGPU:
 
     def launch_kernel(
         self,
-        kernel_func: Any,
+        kernel_func: Callable[..., Any],
         grid_dim: Tuple[int, ...],
         block_dim: Tuple[int, ...],
         *args: Any,
     ) -> None:
-        """Divide the grid into blocks and schedule them for execution.
+        """Divide ``grid_dim`` into blocks and queue them for execution.
 
-        The exact splitting strategy and block scheduling are described in
-        ``RESEARCH.md`` and will be implemented in future issues.
+        Parameters
+        ----------
+        kernel_func:
+            Kernel function to execute for each thread.
+        grid_dim:
+            Size of the grid expressed as ``(x, y, z)``.
+        block_dim:
+            Dimension of each block expressed as ``(x, y, z)``.
+        args:
+            Extra arguments forwarded to ``kernel_func``.
         """
-        # 1. Compute the block indices for a 1D/2D/3D grid.
-        # 2. Create ``ThreadBlock`` instances with their coordinates.
-        # 3. Enqueue blocks into ``block_queue`` or submit them to ``pool``.
-        # 4. Pass simulated pointers and any shared memory context as needed.
-        raise NotImplementedError
+
+        gx, gy, gz = (list(grid_dim) + [1, 1, 1])[:3]
+        bx, by, bz = (list(block_dim) + [1, 1, 1])[:3]
+
+        for z in range(gz):
+            for y in range(gy):
+                for x in range(gx):
+                    block_idx = (x, y, z)
+                    tb = ThreadBlock(
+                        block_idx=block_idx,
+                        block_dim=(bx, by, bz),
+                        grid_dim=(gx, gy, gz),
+                        shared_mem_size=self.shared_mem_size,
+                    )
+                    tb.kernel_func = kernel_func
+                    tb.kernel_args = args
+                    tb.initialize_threads(kernel_func, *args)
+                    for t in tb.threads:
+                        setattr(t, "global_mem", self.global_memory)
+
+                    if self.pool is not None:
+                        self.pool.apply_async(
+                            _execute_block_worker,
+                            args=(tb, kernel_func, args),
+                        )
+                    elif self.sms:
+                        sm = self.sms[self.next_sm]
+                        sm.block_queue.put(tb)
+                        self.next_sm = (self.next_sm + 1) % len(self.sms)
+                    else:
+                        tb.execute(kernel_func, *args)
+
+        if self.sync_on_launch:
+            self.synchronize()
 
     def synchronize(self) -> None:
-        """Wait for all enqueued kernels to finish execution."""
-        raise NotImplementedError
+        """Wait for all queued blocks to complete execution."""
+
+        if self.pool is not None:
+            self.pool.close()
+            self.pool.join()
+
+        for sm in self.sms:
+            sm.fetch_and_execute()
