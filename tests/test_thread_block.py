@@ -43,3 +43,31 @@ def test_repr_contains_info():
     assert "idx=(1, 2, 3)" in text
     assert "threads=0" in text or "threads=1" in text
     assert "block_dim=(1, 1, 1)" in text
+
+
+def test_initialize_threads_sets_same_barrier_instance():
+    tb = ThreadBlock((0, 0, 0), (2, 1, 1), (1, 1, 1), shared_mem_size=1)
+    tb.initialize_threads(lambda *a: None)
+
+    barrier_ids = {id(t.barrier) for t in tb.threads}
+    assert len(barrier_ids) == 1
+    assert tb.barrier is tb.threads[0].barrier
+
+
+class DummyBarrier:
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def wait(self) -> None:  # pragma: no cover - simple counter
+        self.calls += 1
+
+
+@pytest.mark.parametrize("block_dim", [(3, 1, 1), (2, 2, 1), (2, 2, 2)])
+def test_barrier_sync_invokes_wait(block_dim):
+    tb = ThreadBlock((0, 0, 0), block_dim, (1, 1, 1), shared_mem_size=0)
+    dummy = DummyBarrier()
+    tb.barrier = dummy
+    tb.initialize_threads(lambda *a: None)
+
+    tb.barrier_sync()
+    assert dummy.calls == 1
