@@ -3,7 +3,7 @@
 from .virtualgpu import VirtualGPU
 from .global_memory import GlobalMemory
 from .streaming_multiprocessor import StreamingMultiprocessor
-from .threadblock import ThreadBlock
+from .thread_block import ThreadBlock
 
 __all__ = [
     "VirtualGPU",

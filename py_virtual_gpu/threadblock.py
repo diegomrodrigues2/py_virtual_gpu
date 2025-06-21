@@ -1,11 +1,5 @@
-"""Placeholder for the ThreadBlock class."""
+"""Compatibility wrapper for the :mod:`thread_block` module."""
 
+from .thread_block import ThreadBlock
 
-class ThreadBlock:
-    """Group of threads that share memory and can synchronize."""
-
-    def __init__(self) -> None:
-        raise NotImplementedError
-
-    def run(self) -> None:
-        raise NotImplementedError
+__all__ = ["ThreadBlock"]
