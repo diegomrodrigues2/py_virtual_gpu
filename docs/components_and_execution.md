@@ -22,6 +22,16 @@ Um `ThreadBlock` é um agrupamento de threads que partilham uma região de `Shar
 
 `GlobalMemory` é acessível por todos os SMs e blocks. Ela é implementada com `multiprocessing.Array` para permitir o compartilhamento entre processos. Já `SharedMemory` é restrita a um block ou SM e é usada para comunicação rápida entre suas threads.
 
+## Hierarquia de Memória
+
+Os diferentes níveis da hierarquia são representados por subclasses de
+``MemorySpace``. Cada uma possui latência e largura de banda conceituais que são
+acumuladas nos campos ``stats`` sempre que ``read`` ou ``write`` são chamados.
+Entre elas estão ``RegisterFile`` (registradores privados), ``SharedMemory``
+(on-chip), ``L1Cache`` e ``L2Cache`` (caches), ``GlobalMemorySpace`` e espaços
+específicos como ``ConstantMemory`` e ``LocalMemory``. O método
+``reset_stats()`` permite zerar os contadores para novas medições.
+
 ## Fluxo de Execução
 
 1. O usuário chama `launch_kernel` na `VirtualGPU`, indicando a dimensão do grid e do block.
