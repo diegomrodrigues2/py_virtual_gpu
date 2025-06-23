@@ -45,7 +45,10 @@ class StreamingMultiprocessor:
         self.counters: Dict[str, int] = {
             "warps_executed": 0,
             "warp_divergences": 0,
+            "non_coalesced_accesses": 0,
+            "bank_conflicts": 0,
         }
+        self.stats: Dict[str, int] = {"extra_cycles": 0}
         self.divergence_log: List[DivergenceEvent] = []
 
     # ------------------------------------------------------------------
@@ -146,6 +149,25 @@ class StreamingMultiprocessor:
         self.divergence_log.clear()
 
     # ------------------------------------------------------------------
+    # Statistics reporting
+    # ------------------------------------------------------------------
+    def report_coalescing_stats(self) -> Dict[str, int]:
+        """Return current statistics for memory coalescing."""
+
+        return {
+            "non_coalesced_accesses": self.counters["non_coalesced_accesses"],
+            "extra_cycles": self.stats["extra_cycles"],
+        }
+
+    def report_bank_conflict_stats(self) -> Dict[str, int]:
+        """Return current statistics for shared memory bank conflicts."""
+
+        return {
+            "bank_conflicts": self.counters["bank_conflicts"],
+            "extra_cycles": self.stats["extra_cycles"],
+        }
+
+    # ------------------------------------------------------------------
     # Maintenance helpers
     # ------------------------------------------------------------------
     def reset(self) -> None:
@@ -154,6 +176,8 @@ class StreamingMultiprocessor:
         self.warp_queue = LocalQueue()
         for key in self.counters:
             self.counters[key] = 0
+        for key in self.stats:
+            self.stats[key] = 0
         self.divergence_log.clear()
 
     def __repr__(self) -> str:  # pragma: no cover - debugging helper

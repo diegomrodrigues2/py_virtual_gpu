@@ -71,3 +71,19 @@ plt.xlabel("PC")
 plt.ylabel("Divergências acumuladas")
 plt.show()
 ```
+
+## Padrões de Acesso à Memória
+
+O método ``Warp.memory_access`` permite registrar se um conjunto de endereços
+é **coalescido** e se há **conflitos de banco** na ``SharedMemory``. Quando os
+endereços não são contíguos, ``counters['non_coalesced_accesses']`` é
+incrementado e ``stats['extra_cycles']`` recebe +1 ciclo conceitual. Conflitos de
+banco retornados por ``SharedMemory.detect_bank_conflicts`` aumentam
+``counters['bank_conflicts']`` e adicionam ``conflicts - 1`` ciclos extras.
+
+```python
+warp.memory_access([0, 8], 4)            # nao-coalesced
+warp.memory_access([0, 0], 4, "shared")  # conflito de banco
+print(sm.report_coalescing_stats())
+print(sm.report_bank_conflict_stats())
+```

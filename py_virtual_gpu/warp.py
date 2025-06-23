@@ -2,6 +2,16 @@ from __future__ import annotations
 
 from typing import List, TYPE_CHECKING
 
+
+def is_coalesced(addrs: List[int], size: int) -> bool:
+    """Return ``True`` if ``addrs`` form a contiguous vector of ``size`` bytes."""
+
+    sorted_addrs = sorted(addrs)
+    return all(
+        sorted_addrs[i] + size == sorted_addrs[i + 1]
+        for i in range(len(sorted_addrs) - 1)
+    )
+
 from .dispatch import Instruction, SIMTStack
 from .thread import Thread
 
@@ -48,6 +58,24 @@ class Warp:
         """Issue ``inst`` to the active threads (conceptual stub)."""
         self.pc += 1
 
+    def memory_access(self, addr_list: List[int], size: int, space: str = "global") -> bytes:
+        """Conceptually access memory addresses and record efficiency statistics."""
+
+        if not is_coalesced(addr_list, size):
+            self.sm.counters.setdefault("non_coalesced_accesses", 0)
+            self.sm.counters["non_coalesced_accesses"] += 1
+            self.sm.stats.setdefault("extra_cycles", 0)
+            self.sm.stats["extra_cycles"] += 1
+
+        if space == "shared" and hasattr(self.sm.shared_mem, "detect_bank_conflicts"):
+            conflicts = self.sm.shared_mem.detect_bank_conflicts(addr_list)
+            if conflicts > 0:
+                self.sm.counters.setdefault("bank_conflicts", 0)
+                self.sm.counters["bank_conflicts"] += conflicts
+                self.sm.stats.setdefault("extra_cycles", 0)
+                self.sm.stats["extra_cycles"] += conflicts - 1
+        return b""
+
     def handle_divergence(self, predicate: List[bool]) -> None:
         """Handle control-flow divergence for this warp."""
         reconv_pc = self.pc
@@ -63,4 +91,4 @@ class Warp:
         return f"<Warp id={self.id} size={len(self.threads)} active={active}>"
 
 
-__all__ = ["Warp"]
+__all__ = ["Warp", "is_coalesced"]

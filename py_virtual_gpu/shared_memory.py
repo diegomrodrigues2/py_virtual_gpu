@@ -4,17 +4,30 @@ from __future__ import annotations
 
 from multiprocessing import Array, Lock
 from ctypes import c_byte
+from collections import Counter
 
 
 class SharedMemory:
-    """Simple byte-addressable shared memory buffer."""
+    """Simple byte-addressable shared memory buffer with bank tracking."""
 
-    def __init__(self, size: int) -> None:
-        """Create a shared buffer of ``size`` bytes."""
+    def __init__(self, size: int, num_banks: int = 32, bank_stride: int = 4) -> None:
+        """Create a shared buffer of ``size`` bytes.
+
+        Parameters
+        ----------
+        size:
+            Total buffer size in bytes.
+        num_banks:
+            Number of conceptual memory banks for conflict detection.
+        bank_stride:
+            Stride in bytes that maps consecutive addresses to different banks.
+        """
 
         self.size: int = size
         self.buffer = Array(c_byte, size, lock=False)
         self.lock = Lock()
+        self.num_banks = num_banks
+        self.bank_stride = bank_stride
 
     # ------------------------------------------------------------------
     # Basic accessors
@@ -123,6 +136,21 @@ class SharedMemory:
                 num_bytes, byteorder="little", signed=True
             )
             return old
+
+    # ------------------------------------------------------------------
+    # Bank conflict detection
+    # ------------------------------------------------------------------
+    def detect_bank_conflicts(self, addrs: list[int]) -> int:
+        """Return number of extra threads that collide on the same bank.
+
+        For each address ``addr`` the bank index is computed as
+        ``(addr // bank_stride) % num_banks``. If ``n`` threads access the
+        same bank simultaneously, ``n-1`` conflicts are counted.
+        """
+
+        banks = [ (addr // self.bank_stride) % self.num_banks for addr in addrs ]
+        counts = Counter(banks)
+        return sum(cnt - 1 for cnt in counts.values() if cnt > 1)
 
 
 __all__ = ["SharedMemory"]
