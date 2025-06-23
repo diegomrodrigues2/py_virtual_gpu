@@ -7,6 +7,17 @@ from .streaming_multiprocessor import StreamingMultiprocessor, DivergenceEvent
 from .thread_block import ThreadBlock
 from .warp import Warp
 from .dispatch import Instruction, SIMTStack
+from .memory_hierarchy import (
+    MemorySpace,
+    RegisterFile,
+    SharedMemory as HierSharedMemory,
+    L1Cache,
+    L2Cache,
+    GlobalMemorySpace,
+    ConstantMemory,
+    LocalMemory,
+    HostMemory,
+)
 
 __all__ = [
     "VirtualGPU",
@@ -18,5 +29,14 @@ __all__ = [
     "SIMTStack",
     "DevicePointer",
     "DivergenceEvent",
+    "MemorySpace",
+    "RegisterFile",
+    "HierSharedMemory",
+    "L1Cache",
+    "L2Cache",
+    "GlobalMemorySpace",
+    "ConstantMemory",
+    "LocalMemory",
+    "HostMemory",
 ]
 
