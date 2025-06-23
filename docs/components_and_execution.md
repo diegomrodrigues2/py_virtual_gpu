@@ -45,6 +45,12 @@ específicos como ``ConstantMemory`` e ``LocalMemory``. O método
 
 - `VirtualGPU.malloc` e `VirtualGPU.free` permitem gerenciar espacos em `GlobalMemory` por meio de `DevicePointer`.
 - `memcpy_host_to_device`, `memcpy_device_to_host` e `memcpy` copiam dados entre CPU e GPU.
+- Exemplo de cópia:
+```python
+ptr = gpu.malloc(256)
+gpu.memcpy_host_to_device(b"\x00" * 256, ptr)
+data = gpu.memcpy_device_to_host(ptr, 256)
+```
 - O decorador `@kernel` transforma funcoes Python em kernels e utiliza o dispositivo definido por `VirtualGPU.set_current`.
 - `launch_kernel` divide o grid em `ThreadBlock`s e distribui entre os SMs, expondo `threadIdx`, `blockIdx`, `blockDim` e `gridDim` para o kernel.
 - `ThreadBlock.barrier_sync()` permite que as threads de um block aguardem umas

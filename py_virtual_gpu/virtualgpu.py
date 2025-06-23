@@ -4,12 +4,15 @@ from __future__ import annotations
 
 from multiprocessing import Queue, Pool
 from typing import List, Any, Tuple, Optional, Callable
+from math import ceil
 
 # Placeholder imports for yet-to-be-implemented classes.
 from .global_memory import GlobalMemory
 from .memory import DevicePointer
 from .streaming_multiprocessor import StreamingMultiprocessor  # type: ignore  # noqa: F401
 from .thread_block import ThreadBlock  # type: ignore  # noqa: F401
+from .memory_hierarchy import HostMemory
+from .transfer import TransferEvent
 
 
 def _execute_block_worker(tb: ThreadBlock, func: Callable[..., Any], args: Tuple[Any, ...]) -> None:
@@ -49,6 +52,10 @@ class VirtualGPU:
         *,
         use_pool: bool = False,
         sync_on_launch: bool = False,
+        host_latency_cycles: int = 1000,
+        host_bandwidth_bpc: int = 16,
+        device_latency_cycles: int = 200,
+        device_bandwidth_bpc: int = 32,
     ) -> None:
         """Initialize the virtual device with ``num_sms`` SMs and global memory.
 
@@ -72,7 +79,17 @@ class VirtualGPU:
             StreamingMultiprocessor(i, shared_mem_size, 64)
             for i in range(num_sms)
         ]
-        self.global_memory: GlobalMemory = GlobalMemory(global_mem_size)
+        self.global_memory: GlobalMemory = GlobalMemory(
+            global_mem_size, latency_cycles=device_latency_cycles, bandwidth_bytes_per_cycle=device_bandwidth_bpc
+        )
+        self.global_mem = self.global_memory  # alias for documentation purposes
+        self.host_mem = HostMemory(
+            size=global_mem_size,
+            latency_cycles=host_latency_cycles,
+            bandwidth_bytes_per_cycle=host_bandwidth_bpc,
+            latency_cycles_host_to_device=host_latency_cycles,
+            bandwidth_bpc_host_to_device=host_bandwidth_bpc,
+        )
         self.shared_mem_size: int = shared_mem_size
         self.use_pool: bool = use_pool
         self.sync_on_launch: bool = sync_on_launch
@@ -80,6 +97,10 @@ class VirtualGPU:
         self.pool: Optional[Pool] = Pool(processes=num_sms) if self.use_pool else None
         self._active_ptrs: set[int] = set()
         self._launched_blocks: List[ThreadBlock] = []
+        self.transfer_log: List[TransferEvent] = []
+        self.counters: dict[str, int] = {"transfers": 0}
+        self.stats: dict[str, int] = {"transfer_bytes": 0, "transfer_cycles": 0}
+        self._cycle_counter: int = 0
 
     def malloc(self, size: int) -> Any:
         """Allocate ``size`` bytes in global memory and return a :class:`DevicePointer`."""
@@ -101,54 +122,38 @@ class VirtualGPU:
     # ------------------------------------------------------------------
     # Data transfer helpers
     # ------------------------------------------------------------------
-    def memcpy_host_to_device(
-        self,
-        dest_ptr: DevicePointer,
-        src: bytes | bytearray | memoryview,
-        size: int,
-    ) -> None:
-        """Copy ``size`` bytes from host ``src`` into device memory ``dest_ptr``.
 
-        Parameters
-        ----------
-        dest_ptr:
-            Destination pointer inside the device memory.
-        src:
-            Buffer residing on the host. Must contain at least ``size`` bytes.
-        size:
-            Number of bytes to transfer.
+    def current_cycle(self) -> int:
+        """Return the current simulated cycle."""
 
-        Raises
-        ------
-        TypeError
-            If ``dest_ptr`` is not a :class:`DevicePointer`.
-        ValueError
-            If ``dest_ptr`` is invalid or ``src`` is smaller than ``size``.
-        """
+        return self._cycle_counter
+    def memcpy_host_to_device(self, host_buffer: bytes, device_ptr: DevicePointer) -> None:
+        """Copy ``host_buffer`` into ``device_ptr`` recording transfer metrics."""
 
-        if not isinstance(dest_ptr, DevicePointer):
-            raise TypeError("dest_ptr must be a DevicePointer")
-        if dest_ptr.offset not in self._active_ptrs:
+        if not isinstance(device_ptr, DevicePointer):
+            raise TypeError("device_ptr must be a DevicePointer")
+        if device_ptr.offset not in self._active_ptrs:
             raise ValueError("Invalid device pointer")
-        if size < 0 or len(src) < size:
-            raise ValueError("Host buffer too small for memcpy_host_to_device")
 
-        data = bytes(src[:size])
-        self.global_memory.write(dest_ptr.offset, data)
+        size = len(host_buffer)
+        start = self.current_cycle()
+        self.global_memory.write(device_ptr.offset, host_buffer)
+        cycles = self.host_mem.latency_cycles_host_to_device + ceil(
+            size / self.host_mem.bandwidth_bpc_host_to_device
+        )
+        end = start + cycles
+        self._cycle_counter = end
+        self.stats["transfer_cycles"] += cycles
+        self.stats["transfer_bytes"] += size
+        self.counters["transfers"] += 1
+        self.transfer_log.append(TransferEvent("H2D", size, start, end))
 
-    def memcpy_device_to_host(
-        self,
-        dest: bytearray | memoryview,
-        src_ptr: DevicePointer,
-        size: int,
-    ) -> None:
-        """Copy ``size`` bytes from ``src_ptr`` in device memory into host ``dest``.
+    def memcpy_device_to_host(self, device_ptr: DevicePointer, size: int) -> bytes:
+        """Copy ``size`` bytes from ``device_ptr`` back to the host and return them.
 
         Parameters
         ----------
-        dest:
-            Host buffer that will receive the data.
-        src_ptr:
+        device_ptr:
             Pointer to the source region in device memory.
         size:
             Number of bytes to transfer.
@@ -156,20 +161,30 @@ class VirtualGPU:
         Raises
         ------
         TypeError
-            If ``src_ptr`` is not a :class:`DevicePointer`.
+            If ``device_ptr`` is not a :class:`DevicePointer`.
         ValueError
-            If ``src_ptr`` is invalid or ``dest`` is smaller than ``size``.
+            If ``device_ptr`` is invalid or ``size`` is negative.
         """
 
-        if not isinstance(src_ptr, DevicePointer):
-            raise TypeError("src_ptr must be a DevicePointer")
-        if src_ptr.offset not in self._active_ptrs:
+        if not isinstance(device_ptr, DevicePointer):
+            raise TypeError("device_ptr must be a DevicePointer")
+        if device_ptr.offset not in self._active_ptrs:
             raise ValueError("Invalid device pointer")
-        if size < 0 or len(dest) < size:
-            raise ValueError("Host buffer too small for memcpy_device_to_host")
+        if size < 0:
+            raise ValueError("Size must be positive")
 
-        data = self.global_memory.read(src_ptr.offset, size)
-        dest[:size] = data
+        start = self.current_cycle()
+        data = self.global_memory.read(device_ptr.offset, size)
+        cycles = self.global_memory.latency_cycles + ceil(
+            size / self.global_memory.bandwidth_bpc
+        )
+        end = start + cycles
+        self._cycle_counter = end
+        self.stats["transfer_cycles"] += cycles
+        self.stats["transfer_bytes"] += size
+        self.counters["transfers"] += 1
+        self.transfer_log.append(TransferEvent("D2H", size, start, end))
+        return data
 
     def memcpy(self, dest: Any, src: Any, size: int, direction: str) -> None:
         """Copy data between host and device according to ``direction``."""
@@ -266,3 +281,17 @@ class VirtualGPU:
                 totals["spill_bytes"] += stats.get("spill_bytes", 0)
                 totals["spill_cycles"] += stats.get("spill_cycles", 0)
         return totals
+
+    def get_transfer_stats(self) -> dict[str, int]:
+        """Return aggregate statistics for host/device transfers."""
+
+        return {
+            "transfers": self.counters["transfers"],
+            "transfer_bytes": self.stats["transfer_bytes"],
+            "transfer_cycles": self.stats["transfer_cycles"],
+        }
+
+    def get_transfer_log(self) -> List[TransferEvent]:
+        """Return a copy of the log with all transfer events."""
+
+        return list(self.transfer_log)

@@ -15,13 +15,20 @@ from typing import Dict, List, Tuple
 class GlobalMemory:
     """Simulated global memory accessible to all thread blocks."""
 
-    def __init__(self, size: int) -> None:
+    def __init__(
+        self,
+        size: int,
+        latency_cycles: int = 200,
+        bandwidth_bytes_per_cycle: int = 32,
+    ) -> None:
         """Create a block of ``size`` bytes backed by shared memory."""
         self.size: int = size
         self.buffer = Array(c_byte, size, lock=False)
         self.lock = Lock()
         self.allocations: Dict[int, int] = {}
         self._free_list: List[Tuple[int, int]] = [(0, size)]
+        self.latency_cycles = latency_cycles
+        self.bandwidth_bpc = bandwidth_bytes_per_cycle
 
     # ------------------------------------------------------------------
     # Allocation helpers
