@@ -7,6 +7,7 @@ from multiprocessing import Barrier
 
 from .shared_memory import SharedMemory
 from .global_memory import GlobalMemory
+from .memory_hierarchy import RegisterFile, LocalMemory
 
 
 class RegisterMemory:
@@ -70,13 +71,31 @@ class Thread:
         self.block_dim: Tuple[int, int, int] = block_dim or (1, 1, 1)
         self.grid_dim: Tuple[int, int, int] = grid_dim or (1, 1, 1)
 
-        # Private register memory
-        self.registers = RegisterMemory(register_mem_size)
+        # Private register and spill memory
+        self.local_mem = LocalMemory(register_mem_size)
+        self.registers = RegisterFile(
+            register_mem_size,
+            spill_granularity=4,
+            spill_latency_cycles=50,
+        )
+        self.registers.local_mem = self.local_mem
 
         # Memory references
         self.shared_mem = shared_mem
         self.global_mem = global_mem
         self.barrier = barrier
+
+    # ------------------------------------------------------------------
+    # Spill statistics
+    # ------------------------------------------------------------------
+    def get_spill_stats(self) -> Dict[str, int]:
+        """Return spill statistics collected by ``RegisterFile``."""
+
+        return {
+            "spill_events": self.registers.stats.get("spill_events", 0),
+            "spill_bytes": self.registers.stats.get("spill_bytes", 0),
+            "spill_cycles": self.registers.stats.get("spill_cycles", 0),
+        }
 
     # ------------------------------------------------------------------
     # Execution
@@ -123,7 +142,7 @@ class Thread:
         bx, by, bz = self.block_idx
         return (
             f"<Thread idx=({tx},{ty},{tz}) blk=({bx},{by},{bz}) "
-            f"regs={len(self.registers._storage)}>"
+            f"regs={self.registers.size}>"
         )
 
 
