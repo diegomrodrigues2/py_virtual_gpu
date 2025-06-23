@@ -72,9 +72,7 @@ class StreamingMultiprocessor:
             while not self.warp_queue.empty():
                 self.warp_queue.get()
         else:
-            self._run_round_robin()
-
-        self.counters["warps_executed"] += len(warps)
+            self.dispatch()
 
     def execute_warp(self, warp_threads: List[Thread]) -> None:
         """Conceptual lock-step execution of a warp."""
@@ -88,6 +86,7 @@ class StreamingMultiprocessor:
         """Run each warp to completion sequentially."""
         for warp in warps:
             warp.execute()
+            self.counters["warps_executed"] += 1
 
     def _run_round_robin(self) -> None:
         """Run warps in a round-robin manner until all complete."""
@@ -97,6 +96,7 @@ class StreamingMultiprocessor:
             except Exception:
                 break
             warp.execute()
+            self.counters["warps_executed"] += 1
             if any(warp.active_mask):
                 self.warp_queue.put(warp)
 
@@ -110,6 +110,7 @@ class StreamingMultiprocessor:
                 break
             inst = Instruction("NOP", tuple())
             warp.issue_instruction(inst)
+            self.counters["warps_executed"] += 1
             if any(warp.active_mask):
                 self.warp_queue.put(warp)
 

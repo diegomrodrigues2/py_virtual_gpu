@@ -23,5 +23,5 @@ def test_warp_attributes_and_execute_basic(monkeypatch):
     assert w.pc == 1
     assert sm.counters["warp_divergences"] == 0
     inst = Instruction("NOP", tuple())
-    with pytest.raises(NotImplementedError):
-        w.issue_instruction(inst)
+    w.issue_instruction(inst)
+    assert w.pc == 2

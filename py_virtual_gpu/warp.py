@@ -47,7 +47,6 @@ class Warp:
     def issue_instruction(self, inst: Instruction) -> None:
         """Issue ``inst`` to the active threads (conceptual stub)."""
         self.pc += 1
-        raise NotImplementedError("Dispatch de instru\u00e7\u00e3o stub")
 
     def handle_divergence(self, predicate: List[bool]) -> None:
         """Handle control-flow divergence for this warp."""

@@ -8,7 +8,7 @@ O objeto `VirtualGPU` representa o dispositivo inteiro. Ele agrega diversos `Str
 
 ## StreamingMultiprocessor
 
-Cada `StreamingMultiprocessor` possui sua própria `SharedMemory` e uma fila de `ThreadBlock`s. Um SM executa os blocks de forma sequencial ou em round-robin, criando `Warp`s para conduzir as `Thread`s em *lock-step*.
+Cada `StreamingMultiprocessor` possui sua própria `SharedMemory` e uma fila de `ThreadBlock`s. Um SM executa os blocks de forma sequencial ou em round-robin, criando `Warp`s para conduzir as `Thread`s em *lock-step*. O método `dispatch()` emite uma instrução por warp a cada "ciclo" e reenfileira aqueles que continuam ativos. O contador `warps_executed` é incrementado a cada emissão.
 
 ## ThreadBlock
 
