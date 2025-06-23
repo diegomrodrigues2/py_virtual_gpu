@@ -246,11 +246,43 @@ class LocalMemory(MemorySpace):
 
 
 class HostMemory(MemorySpace):
-    """Memory residing on the host side."""
+    """Memory residing on the host side.
 
-    def __init__(self, size: int = 0, latency_cycles: int = 1000, bandwidth_bytes_per_cycle: int = 16) -> None:
+    Parameters
+    ----------
+    size:
+        Capacity of the simulated host memory.
+    latency_cycles:
+        Base latency for host reads/writes.
+    bandwidth_bytes_per_cycle:
+        Effective bandwidth in bytes per cycle for host accesses.
+    latency_cycles_host_to_device:
+        Latency used when copying data to a device memory space. Defaults to
+        ``latency_cycles`` when ``None``.
+    bandwidth_bpc_host_to_device:
+        Bandwidth in bytes per cycle for host-to-device transfers. Defaults to
+        ``bandwidth_bytes_per_cycle`` when ``None``.
+    """
+
+    def __init__(
+        self,
+        size: int = 0,
+        latency_cycles: int = 1000,
+        bandwidth_bytes_per_cycle: int = 16,
+        *,
+        latency_cycles_host_to_device: int | None = None,
+        bandwidth_bpc_host_to_device: int | None = None,
+    ) -> None:
         super().__init__(size, latency_cycles, bandwidth_bytes_per_cycle)
         self.buffer = bytearray(self.size)
+        self.latency_cycles_host_to_device = (
+            latency_cycles if latency_cycles_host_to_device is None else latency_cycles_host_to_device
+        )
+        self.bandwidth_bpc_host_to_device = (
+            bandwidth_bytes_per_cycle
+            if bandwidth_bpc_host_to_device is None
+            else bandwidth_bpc_host_to_device
+        )
 
     def read(self, offset: int, size: int) -> bytes:
         if offset < 0 or offset + size > self.size:

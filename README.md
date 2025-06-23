@@ -50,9 +50,8 @@ def hello(threadIdx, blockIdx, blockDim, gridDim, msg):
 hello("Oi")
 
 ptr = gpu.malloc(4)
-gpu.memcpy_host_to_device(ptr, b"data", 4)
-buf = bytearray(4)
-gpu.memcpy_device_to_host(buf, ptr, 4)
-print(bytes(buf))
+gpu.memcpy_host_to_device(b"data", ptr)
+data = gpu.memcpy_device_to_host(ptr, 4)
+print(data)
 gpu.free(ptr)
 ```
