@@ -5,7 +5,7 @@ from .global_memory import GlobalMemory
 from .memory import DevicePointer
 from .streaming_multiprocessor import StreamingMultiprocessor, DivergenceEvent
 from .thread_block import ThreadBlock
-from .warp import Warp
+from .warp import Warp, is_coalesced
 from .dispatch import Instruction, SIMTStack
 from .memory_hierarchy import (
     MemorySpace,
@@ -25,6 +25,7 @@ __all__ = [
     "StreamingMultiprocessor",
     "ThreadBlock",
     "Warp",
+    "is_coalesced",
     "Instruction",
     "SIMTStack",
     "DevicePointer",
