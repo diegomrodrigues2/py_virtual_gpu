@@ -79,6 +79,7 @@ class VirtualGPU:
         self.next_sm: int = 0
         self.pool: Optional[Pool] = Pool(processes=num_sms) if self.use_pool else None
         self._active_ptrs: set[int] = set()
+        self._launched_blocks: List[ThreadBlock] = []
 
     def malloc(self, size: int) -> Any:
         """Allocate ``size`` bytes in global memory and return a :class:`DevicePointer`."""
@@ -223,6 +224,7 @@ class VirtualGPU:
                     tb.initialize_threads(kernel_func, *args)
                     for t in tb.threads:
                         setattr(t, "global_mem", self.global_memory)
+                    self._launched_blocks.append(tb)
 
                     if self.pool is not None:
                         self.pool.apply_async(
@@ -252,3 +254,15 @@ class VirtualGPU:
 
         for sm in self.sms:
             sm.fetch_and_execute()
+
+    def get_memory_stats(self) -> dict[str, int]:
+        """Aggregate spill statistics from all launched threads."""
+
+        totals = {"spill_events": 0, "spill_bytes": 0, "spill_cycles": 0}
+        for tb in self._launched_blocks:
+            for t in tb.threads:
+                stats = getattr(t, "get_spill_stats", lambda: {})()
+                totals["spill_events"] += stats.get("spill_events", 0)
+                totals["spill_bytes"] += stats.get("spill_bytes", 0)
+                totals["spill_cycles"] += stats.get("spill_cycles", 0)
+        return totals

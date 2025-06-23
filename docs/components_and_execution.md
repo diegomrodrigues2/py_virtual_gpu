@@ -87,3 +87,12 @@ warp.memory_access([0, 0], 4, "shared")  # conflito de banco
 print(sm.report_coalescing_stats())
 print(sm.report_bank_conflict_stats())
 ```
+
+## Spill de Registradores
+
+Quando uma thread excede a capacidade de seu ``RegisterFile`` durante uma
+escrita, os bytes extras são redirecionados para sua ``LocalMemory`` privada.
+Cada spill registra eventos e adiciona ciclos extras calculados a partir de
+``spill_granularity`` e ``spill_latency_cycles``. As estatísticas podem ser
+obtidas por thread com ``thread.get_spill_stats()`` ou agregadas pela
+``VirtualGPU.get_memory_stats()``.

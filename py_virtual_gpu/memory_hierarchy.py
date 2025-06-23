@@ -53,11 +53,39 @@ class MemorySpace(ABC):
 
 
 class RegisterFile(MemorySpace):
-    """Private per-thread register file."""
+    """Private per-thread register file with optional spill to ``LocalMemory``."""
 
-    def __init__(self, per_thread_regs: int = 8 * 1024) -> None:
+    def __init__(
+        self,
+        per_thread_regs: int = 8 * 1024,
+        *,
+        spill_granularity: int = 4,
+        spill_latency_cycles: int = 50,
+    ) -> None:
+        """Create a register file capable of spilling excess writes.
+
+        Parameters
+        ----------
+        per_thread_regs:
+            Maximum capacity of the register file in bytes.
+        spill_granularity:
+            Chunk size in bytes used to compute spill latency penalty.
+        spill_latency_cycles:
+            Extra cycles added per spilled chunk when ``write`` overflows.
+        """
+
         super().__init__(per_thread_regs, latency_cycles=1, bandwidth_bytes_per_cycle=per_thread_regs)
         self.buffer = bytearray(self.size)
+        self.spill_granularity = spill_granularity
+        self.spill_latency_cycles = spill_latency_cycles
+        self.spill_ptr = 0
+        self.stats.update({"spill_events": 0, "spill_bytes": 0, "spill_cycles": 0})
+
+    def reset_stats(self) -> None:
+        """Reset read/write counts and spill metrics."""
+
+        super().reset_stats()
+        self.stats.update({"spill_events": 0, "spill_bytes": 0, "spill_cycles": 0})
 
     def read(self, offset: int, size: int) -> bytes:
         if offset < 0 or offset + size > self.size:
@@ -66,11 +94,30 @@ class RegisterFile(MemorySpace):
         return bytes(self.buffer[offset : offset + size])
 
     def write(self, offset: int, data: bytes) -> None:
-        end = offset + len(data)
-        if offset < 0 or end > self.size:
+        """Write ``data`` spilling excess bytes to ``local_mem`` when needed."""
+
+        if offset < 0:
             raise IndexError("RegisterFile write out of bounds")
-        self._account(len(data), False)
-        self.buffer[offset:end] = data
+
+        fit = max(0, min(len(data), self.size - offset))
+        if fit > 0:
+            end = offset + fit
+            self._account(fit, False)
+            self.buffer[offset:end] = data[:fit]
+
+        if fit < len(data):
+            remainder = data[fit:]
+            self.stats["spill_events"] += 1
+            self.stats["spill_bytes"] += len(remainder)
+            lm = getattr(self, "local_mem", None)
+            if lm is None:
+                raise RuntimeError("LocalMemory não inicializada para spill")
+            lm.write(self.spill_ptr, remainder)
+            self.spill_ptr += len(remainder)
+            penalty_chunks = ceil(len(remainder) / self.spill_granularity)
+            penalty = penalty_chunks * self.spill_latency_cycles
+            self.stats["cycles"] += penalty
+            self.stats["spill_cycles"] += penalty
 
 
 class SharedMemory(MemorySpace):

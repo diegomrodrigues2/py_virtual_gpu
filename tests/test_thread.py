@@ -4,17 +4,16 @@ import pytest
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from py_virtual_gpu.thread import Thread, RegisterMemory
+from py_virtual_gpu.thread import Thread
+from py_virtual_gpu.memory_hierarchy import RegisterFile
 from py_virtual_gpu.shared_memory import SharedMemory
 from py_virtual_gpu.global_memory import GlobalMemory
 
 
-def test_register_memory_read_write_clear():
-    rm = RegisterMemory(1024)
-    rm.write("a", 123)
-    assert rm.read("a") == 123
-    rm.clear()
-    assert rm.read("a") is None
+def test_register_file_read_write():
+    rf = RegisterFile(16)
+    rf.write(0, b"abcd")
+    assert rf.read(0, 4) == b"abcd"
 
 
 def test_thread_attributes():
@@ -25,7 +24,7 @@ def test_thread_attributes():
     assert t.block_idx == (1, 2, 3)
     assert t.block_dim == (4, 4, 1)
     assert t.grid_dim == (8, 8, 1)
-    assert isinstance(t.registers, RegisterMemory)
+    assert isinstance(t.registers, RegisterFile)
     assert t.registers.size == 256
 
 
