@@ -34,6 +34,8 @@ O `VirtualGPU` distribui blocks para os SMs, que por sua vez instanciam warps e 
 - Copias entre host e dispositivo por `memcpy_host_to_device` e `memcpy_device_to_host`.
 - Decorador `@kernel` que permite executar funcoes Python como kernels.
 - Lançamento de kernel via `launch_kernel` com exposicao de `threadIdx` e `blockIdx`.
+- Memoria constante (`64 KiB` por padrao) acessivel por
+  `gpu = VirtualGPU.get_current(); gpu.read_constant(...)` ou `thread.const_mem.read(...)`.
 
 ## Exemplo rapido
 
@@ -54,4 +56,8 @@ gpu.memcpy_host_to_device(b"data", ptr)
 data = gpu.memcpy_device_to_host(ptr, 4)
 print(data)
 gpu.free(ptr)
+
+# Leitura de memoria constante
+gpu.set_constant(b"abc")
+print(gpu.read_constant(0, 3))
 ```

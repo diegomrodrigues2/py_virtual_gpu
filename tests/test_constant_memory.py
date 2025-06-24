@@ -38,3 +38,9 @@ def test_launch_kernel_exposes_const_mem():
     t = tb.threads[0]
     assert t.const_mem is gpu.const_memory
 
+
+def test_read_constant_wrapper():
+    gpu = VirtualGPU(0, 32)
+    gpu.set_constant(b"xyz")
+    assert gpu.read_constant(0, 3) == b"xyz"
+

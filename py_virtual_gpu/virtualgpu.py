@@ -214,6 +214,16 @@ class VirtualGPU:
         self.counters["transfers"] += 1
         self.transfer_log.append(TransferEvent("H2D", len(data), start, start + cycles))
 
+    def read_constant(self, addr: int, size: int) -> bytes:
+        """Return ``size`` bytes starting at ``addr`` from constant memory.
+
+        This is a convenience wrapper around :meth:`ConstantMemory.read`
+        so that kernels can call ``VirtualGPU.get_current().read_constant``
+        instead of accessing ``thread.const_mem`` directly.
+        """
+
+        return self.const_memory.read(addr, size)
+
     def launch_kernel(
         self,
         kernel_func: Callable[..., Any],

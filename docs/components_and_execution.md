@@ -29,7 +29,11 @@ Os diferentes níveis da hierarquia são representados por subclasses de
 acumuladas nos campos ``stats`` sempre que ``read`` ou ``write`` são chamados.
 Entre elas estão ``RegisterFile`` (registradores privados), ``SharedMemory``
 (on-chip), ``L1Cache`` e ``L2Cache`` (caches), ``GlobalMemorySpace`` e espaços
-específicos como ``ConstantMemory`` e ``LocalMemory``. O método
+específicos como ``ConstantMemory`` e ``LocalMemory``. ``ConstantMemory`` é uma
+região de somente leitura com tamanho padrão de ``64 KiB`` acessível a todas as
+threads. Um kernel pode obter esses dados via ``gpu = VirtualGPU.get_current();
+gpu.read_constant(addr, size)`` ou diretamente por ``thread.const_mem.read``.
+O método
 ``reset_stats()`` permite zerar os contadores para novas medições.
 
 ## Fluxo de Execução
