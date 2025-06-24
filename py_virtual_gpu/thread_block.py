@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from multiprocessing import Barrier
 from typing import Callable, List, Tuple, Any
+from threading import Thread as _PyThread
 
 from .shared_memory import SharedMemory
 from .thread import Thread
@@ -72,6 +73,7 @@ class ThreadBlock:
     def execute(self, kernel_func: Callable[..., Any], *args: Any) -> None:
         """Run all threads in this block invoking their ``run`` method."""
         self.initialize_threads(kernel_func, *args)
+        workers: List[_PyThread] = []
         for t in self.threads:
             run = getattr(t, "run", None)
             if callable(run):
@@ -82,7 +84,12 @@ class ThreadBlock:
                     t.grid_dim,
                     *args,
                 )
-                run(kernel_func, *params)
+                worker = _PyThread(target=run, args=(kernel_func, *params))
+                workers.append(worker)
+                worker.start()
+
+        for worker in workers:
+            worker.join()
 
     # ------------------------------------------------------------------
     # Synchronization
