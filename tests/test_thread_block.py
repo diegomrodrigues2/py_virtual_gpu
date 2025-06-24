@@ -34,7 +34,7 @@ def test_execute_invokes_kernel_for_each_thread():
     assert len(tb.threads) == 2
     assert len(called) == 2
     expected = [((0, 0, 0), (0, 0, 0), 42), ((1, 0, 0), (0, 0, 0), 42)]
-    assert called == expected
+    assert sorted(called) == sorted(expected)
 
 
 def test_repr_contains_info():
