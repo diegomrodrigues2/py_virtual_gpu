@@ -20,6 +20,8 @@ from .memory_hierarchy import (
     HostMemory,
 )
 
+const_memory = ConstantMemory
+
 __all__ = [
     "VirtualGPU",
     "GlobalMemory",
@@ -38,6 +40,7 @@ __all__ = [
     "L2Cache",
     "GlobalMemorySpace",
     "ConstantMemory",
+    "const_memory",
     "LocalMemory",
     "HostMemory",
     "TransferEvent",
