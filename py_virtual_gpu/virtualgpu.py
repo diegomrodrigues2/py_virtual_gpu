@@ -11,7 +11,7 @@ from .global_memory import GlobalMemory
 from .memory import DevicePointer
 from .streaming_multiprocessor import StreamingMultiprocessor  # type: ignore  # noqa: F401
 from .thread_block import ThreadBlock  # type: ignore  # noqa: F401
-from .memory_hierarchy import HostMemory
+from .memory_hierarchy import HostMemory, ConstantMemory
 from .transfer import TransferEvent
 
 
@@ -56,6 +56,7 @@ class VirtualGPU:
         host_bandwidth_bpc: int = 16,
         device_latency_cycles: int = 200,
         device_bandwidth_bpc: int = 32,
+        constant_mem_size: int = 64 * 1024,
     ) -> None:
         """Initialize the virtual device with ``num_sms`` SMs and global memory.
 
@@ -90,6 +91,7 @@ class VirtualGPU:
             latency_cycles_host_to_device=host_latency_cycles,
             bandwidth_bpc_host_to_device=host_bandwidth_bpc,
         )
+        self.const_memory: ConstantMemory = ConstantMemory(constant_mem_size)
         self.shared_mem_size: int = shared_mem_size
         self.use_pool: bool = use_pool
         self.sync_on_launch: bool = sync_on_launch
@@ -193,6 +195,25 @@ class VirtualGPU:
         src_ptr = src.offset if isinstance(src, DevicePointer) else src
         return self.global_memory.memcpy(dest_ptr, src_ptr, size, direction)
 
+    def set_constant(self, data: bytes, offset: int = 0) -> None:
+        """Copy ``data`` into constant memory starting at ``offset``."""
+
+        end = offset + len(data)
+        if offset < 0 or end > self.const_memory.size:
+            raise ValueError("Constant memory write out of bounds")
+
+        start = self.current_cycle()
+        view = memoryview(self.const_memory.buffer)
+        view[offset:end] = data
+        cycles = self.host_mem.latency_cycles_host_to_device + ceil(
+            len(data) / self.host_mem.bandwidth_bpc_host_to_device
+        )
+        self._cycle_counter = start + cycles
+        self.stats["transfer_cycles"] += cycles
+        self.stats["transfer_bytes"] += len(data)
+        self.counters["transfers"] += 1
+        self.transfer_log.append(TransferEvent("H2D", len(data), start, start + cycles))
+
     def launch_kernel(
         self,
         kernel_func: Callable[..., Any],
@@ -239,6 +260,7 @@ class VirtualGPU:
                     tb.initialize_threads(kernel_func, *args)
                     for t in tb.threads:
                         setattr(t, "global_mem", self.global_memory)
+                        setattr(t, "const_mem", self.const_memory)
                     self._launched_blocks.append(tb)
 
                     if self.pool is not None:
