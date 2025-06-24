@@ -71,3 +71,26 @@ def test_barrier_sync_invokes_wait(block_dim):
 
     tb.barrier_sync()
     assert dummy.calls == 1
+
+
+def test_barrier_wait_orders_entries():
+    block_dim = (4, 1, 1)
+    tb = ThreadBlock((0, 0, 0), block_dim, (1, 1, 1), shared_mem_size=0)
+    records = []
+
+    def kernel(tidx, bidx, bdim, gdim, barrier, log):
+        log.append(("before", tidx))
+        barrier.wait()
+        log.append(("after", tidx))
+
+    tb.execute(kernel, tb.barrier, records)
+
+    total_threads = block_dim[0] * block_dim[1] * block_dim[2]
+    assert len(records) == 2 * total_threads
+
+    before_indices = [i for i, r in enumerate(records) if r[0] == "before"]
+    after_indices = [i for i, r in enumerate(records) if r[0] == "after"]
+
+    assert len(before_indices) == total_threads
+    assert len(after_indices) == total_threads
+    assert min(after_indices) > max(before_indices)
