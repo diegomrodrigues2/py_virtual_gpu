@@ -75,6 +75,27 @@ class Warp:
             if callable(step):
                 step(inst)
 
+        if inst.opcode.startswith(("LD", "ST")) or inst.opcode in {
+            "LOAD",
+            "STORE",
+        }:
+            addr_op = inst.operands[0] if len(inst.operands) > 0 else 0
+            size = inst.operands[1] if len(inst.operands) > 1 else 0
+            space = inst.operands[2] if len(inst.operands) > 2 else "global"
+            addr_list: List[int] = []
+            for thread, active in zip(self.threads, self.active_mask):
+                if not active:
+                    continue
+                addr = addr_op
+                if callable(addr_op):
+                    addr = addr_op(thread)
+                elif hasattr(addr_op, "offset"):
+                    addr = getattr(addr_op, "offset")
+                elif isinstance(addr_op, str) and hasattr(thread, addr_op):
+                    addr = getattr(thread, addr_op)
+                addr_list.append(int(addr))
+            self.memory_access(addr_list, size, space)
+
         self.pc += 1
 
         # Check if we've reached a reconvergence point recorded on the SIMT
