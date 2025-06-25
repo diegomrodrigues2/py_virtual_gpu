@@ -77,6 +77,16 @@ class Warp:
 
         self.pc += 1
 
+        # Check if we've reached a reconvergence point recorded on the SIMT
+        # stack. If so, restore the previous mask and record the event.
+        top_mask, reconv_pc = self.simt_stack.top()
+        if reconv_pc != -1 and self.pc == reconv_pc:
+            prev_mask, _ = self.simt_stack.pop()
+            mask_before = self.active_mask.copy()
+            self.active_mask = prev_mask
+            if mask_before != self.active_mask:
+                self.sm.record_divergence(self, self.pc, mask_before, self.active_mask)
+
         # ``True`` means there are still active threads; ``False`` means the SM
         # can discard this warp from the scheduling queue.
         return any(self.active_mask)
