@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "py_virtual_gpu"
+version = "0.1.0"
+description = "Python Virtual GPU simulator"
+authors = [{name="Diego Rodrigues"}]
+readme = "README.md"
+requires-python = ">=3.10"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["py_virtual_gpu*"]
+
+[project.optional-dependencies]
+api = ["fastapi", "uvicorn[standard]"]

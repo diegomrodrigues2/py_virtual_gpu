@@ -84,3 +84,15 @@ gpu.free(ptr)
 gpu.set_constant(b"abc")
 print(gpu.read_constant(0, 3))
 ```
+
+## API
+
+Para iniciar a API execute:
+
+```bash
+pip install -e .[api]
+make dev-api
+```
+
+A documentação Swagger estará disponível em http://localhost:8000/docs.
+
