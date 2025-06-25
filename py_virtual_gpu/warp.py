@@ -44,16 +44,42 @@ class Warp:
 
         return self.active_mask.copy()
 
-    def execute(self) -> None:
-        """Execute one instruction and detect divergence conceptually."""
+    def execute(self) -> bool:
+        """Execute one instruction and detect divergence conceptually.
 
+        Returns
+        -------
+        bool
+            ``True`` while at least one thread in the warp remains active,
+            otherwise ``False`` indicating the warp finished execution.
+        """
+
+        # Fetch the instruction pointed by the current ``pc``.
         inst = self.fetch_next_instruction()
+
+        # Evaluate the branch predicate for each thread and check if the
+        # resulting mask differs from the current active mask.
         mask_before = self.active_mask.copy()
         predicate = self.evaluate_predicate(inst)
         if predicate != mask_before:
             self.handle_divergence(predicate)
             self.sm.record_divergence(self, self.pc, mask_before, self.active_mask)
+
+        # Execute the instruction only for threads that are active under the
+        # updated mask. ``run_step`` is treated as an optional helper used by
+        # the tests; other implementations may provide a different method.
+        for thread, active in zip(self.threads, self.active_mask):
+            if not active:
+                continue
+            step = getattr(thread, "run_step", None)
+            if callable(step):
+                step(inst)
+
         self.pc += 1
+
+        # ``True`` means there are still active threads; ``False`` means the SM
+        # can discard this warp from the scheduling queue.
+        return any(self.active_mask)
     def issue_instruction(self, inst: Instruction) -> None:
         """Issue ``inst`` to the active threads (conceptual stub)."""
         self.pc += 1
