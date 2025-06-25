@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from ...services import GPUManager, get_gpu_manager
-from ..schemas import GPUSummary, GPUState, GPUMetrics
+from ..schemas import GPUSummary, GPUState, GPUMetrics, SMDetailed
 
 router = APIRouter()
 
@@ -36,3 +36,18 @@ def gpu_metrics(id: int, manager: GPUManager = Depends(get_gpu_manager)) -> GPUM
     """Return aggregated metrics for the GPU with ``id``."""
 
     return manager.get_gpu_metrics(id)
+
+
+@router.get("/gpus/{id}/sm/{sm_id}", response_model=SMDetailed)
+def sm_detail(
+    id: int,
+    sm_id: int,
+    max_events: int = Query(100, ge=1),
+    manager: GPUManager = Depends(get_gpu_manager),
+) -> SMDetailed:
+    """Return detailed state for ``sm_id`` of GPU ``id``."""
+
+    try:
+        return manager.get_sm_detail(id, sm_id, max_events)
+    except IndexError:
+        raise HTTPException(status_code=404, detail="SM not found")
