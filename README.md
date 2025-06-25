@@ -94,7 +94,22 @@ pip install -e .[api]
 make dev-api
 ```
 
+
 A documentação Swagger estará disponível em http://localhost:8000/docs.
+
+## Using with Jupyter/REPL
+
+To expose the API while working interactively start it in a background thread:
+
+```python
+from py_virtual_gpu.api.server import start_background_api
+
+thread, stop = start_background_api(port=8001)
+# ... interact with the API ...
+stop()
+```
+
+This is helpful when running notebooks or experimenting in the Python REPL.
 
 ## Setup de desenvolvimento
 
