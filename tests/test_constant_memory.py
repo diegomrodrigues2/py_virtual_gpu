@@ -44,3 +44,29 @@ def test_read_constant_wrapper():
     gpu.set_constant(b"xyz")
     assert gpu.read_constant(0, 3) == b"xyz"
 
+
+def test_set_constant_visible_in_kernel():
+    gpu = VirtualGPU(0, 32)
+    VirtualGPU.set_current(gpu)
+    gpu.sms = [DummySM()]
+    gpu.set_constant(b"hello")
+
+    captured = {}
+
+    def kernel(tidx, bidx, bdim, gdim):
+        captured["data"] = VirtualGPU.get_current().read_constant(0, 5)
+
+    gpu.launch_kernel(kernel, (1, 1, 1), (1, 1, 1))
+    tb = gpu.sms[0].block_queue.get()
+    tb.execute(tb.kernel_func, *tb.kernel_args)
+
+    assert captured["data"] == b"hello"
+
+
+def test_constant_memory_write_raises():
+    from py_virtual_gpu.memory_hierarchy import ConstantMemory
+
+    cm = ConstantMemory(8)
+    with pytest.raises(RuntimeError):
+        cm.write(0, b"a")
+
