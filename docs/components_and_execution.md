@@ -103,11 +103,19 @@ originais continuam acessíveis diretamente através das instâncias de
 
 ## Monitoramento de Divergência
 
-O ``StreamingMultiprocessor`` registra eventos de divergência de warp toda vez
-que a máscara de threads ativas muda devido a um branch. Esses eventos podem ser
-obtidos com ``get_divergence_log()`` para análise posterior. O exemplo abaixo
-ilustra como construir um gráfico simples do número acumulado de divergências em
-função do ``pc`` de cada evento:
+Com o novo fluxo de execução cada warp é avançado em *lock-step*. O método
+``dispatch()`` do SM seleciona um warp na fila e chama ``warp.execute()`` para
+emitir uma instrução. Durante essa etapa a instrução é buscada, o predicado de
+ramo é avaliado para todas as threads e a ``SIMTStack`` é atualizada para tratar
+reconvergências. Sempre que a máscara de threads muda ``record_divergence``
+armazena um ``DivergenceEvent`` em ``divergence_log`` e incrementa
+``counters['warp_divergences']``. O total de instruções emitidas é acumulado em
+``counters['warps_executed']`` e quaisquer ciclos extras provenientes de acesso
+à memória são somados em ``stats['extra_cycles']``.
+
+O log pode ser consultado para análise posterior. O exemplo a seguir constrói um
+gráfico simples mostrando o número acumulado de divergências ao longo do ``pc``
+de cada evento:
 
 ```python
 log = sm.get_divergence_log()
@@ -117,6 +125,8 @@ plt.plot(pcs, divs)
 plt.xlabel("PC")
 plt.ylabel("Divergências acumuladas")
 plt.show()
+print("Warps executados:", sm.counters["warps_executed"])
+print("Divergências registradas:", sm.counters["warp_divergences"])
 ```
 
 ## Padrões de Acesso à Memória
@@ -131,8 +141,10 @@ banco retornados por ``SharedMemory.detect_bank_conflicts`` aumentam
 ```python
 warp.memory_access([0, 8], 4)            # nao-coalesced
 warp.memory_access([0, 0], 4, "shared")  # conflito de banco
-print(sm.report_coalescing_stats())
-print(sm.report_bank_conflict_stats())
+coalescing = sm.report_coalescing_stats()
+conflicts = sm.report_bank_conflict_stats()
+print(coalescing)
+print(conflicts)
 ```
 
 ## Spill de Registradores
