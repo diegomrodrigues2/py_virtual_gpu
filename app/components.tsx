@@ -191,12 +191,12 @@ export const SmCard: React.FC<SmCardProps> = ({ sm }) => {
 interface GpuOverviewCardProps { summary: GpuSummary; onSelectGpu: (id: string) => void; isSelected: boolean; }
 export const GpuOverviewCard: React.FC<GpuOverviewCardProps> = ({ summary, onSelectGpu, isSelected }) => {
   const statusColor = summary.status === 'online' ? 'border-green-500' : summary.status === 'error' ? 'border-red-500' : 'border-gray-600';
-  const bgColor = isSelected ? 'bg-sky-700' : 'bg-gray-800 hover:bg-gray-700';
+  const bgColor = isSelected ? 'bg-sky-700' : 'bg-gray-800 hover:bg-gray-700 hover:shadow-lg hover:shadow-sky-500/20';
   
   return (
     <button 
       onClick={() => onSelectGpu(summary.id)}
-      className={`p-4 rounded-lg shadow-md transition-all duration-200 w-full text-left border-2 ${bgColor} ${isSelected ? 'border-sky-400' : statusColor}`}
+      className={`p-4 rounded-lg shadow-md transition-all duration-200 w-full text-left border-2 transform hover:scale-105 cursor-pointer ${bgColor} ${isSelected ? 'border-sky-400' : statusColor}`}
     >
       <div className="flex justify-between items-center mb-2">
         <h3 className="text-xl font-semibold text-sky-300 flex items-center">

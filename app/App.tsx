@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { GPUState, SimulatorEvent, GpuSummary, BackendData } from './types';
-import { fetchBackendData, fetchGpuState } from './gpuSimulatorService';
+import { fetchBackendData } from './gpuSimulatorService';
 import { IconChip, IconMemory, IconActivity, IconInfo, IconChevronDown, IconChevronUp, Tooltip, MemoryUsageDisplay, SmCard, GpuOverviewCard, TransfersDisplay, EventLog, IconGpu, IconLink, StatDisplay } from './components';
 
 
@@ -64,7 +64,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       {currentView === 'cluster' && (
         <GpuClusterView
           summaries={gpuSummaries}
-          onSelectGpu={handleSelectGpu}
+          onSelectGpu={onSelectGpu}
           selectedGpuId={selectedGpuId}
         />
       )}
@@ -165,7 +165,6 @@ const GpuDetailView: React.FC<{ gpu: GPUState }> = ({ gpu }) => (
 const App: React.FC = () => {
   const [backendData, setBackendData] = useState<BackendData | null>(null);
   const [selectedGpuId, setSelectedGpuId] = useState<string | null>(null);
-  const [selectedGpuState, setSelectedGpuState] = useState<GPUState | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<'cluster' | 'detail'>('cluster');
@@ -204,14 +203,8 @@ const App: React.FC = () => {
     const intervalId = setInterval(loadData, 3000); 
     return () => clearInterval(intervalId);
   }, [loadData]);
-  const handleSelectGpu = async (id: string) => {
+  const handleSelectGpu = (id: string) => {
     setSelectedGpuId(id);
-    try {
-      const state = await fetchGpuState(id);
-      setSelectedGpuState(state);
-    } catch (err) {
-      console.error('Failed to fetch GPU state', err);
-    }
     handleSetView('detail');
   };
 
@@ -229,7 +222,7 @@ const App: React.FC = () => {
     setCurrentView(newView);
   };
   
-  const selectedGpu = selectedGpuState ?? backendData?.gpuStates.find(gpu => gpu.id === selectedGpuId);
+  const selectedGpu = backendData?.gpuStates.find(gpu => gpu.id === selectedGpuId);
 
   useEffect(() => {
     if (backendData) {
