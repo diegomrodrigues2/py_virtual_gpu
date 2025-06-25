@@ -104,14 +104,14 @@ class VirtualGPU:
         self.stats: dict[str, int] = {"transfer_bytes": 0, "transfer_cycles": 0}
         self._cycle_counter: int = 0
 
-    def malloc(self, size: int) -> Any:
+    def malloc(self, size: int) -> DevicePointer:
         """Allocate ``size`` bytes in global memory and return a :class:`DevicePointer`."""
 
         offset = self.global_memory.malloc(size)
         self._active_ptrs.add(offset)
-        return DevicePointer(offset, self.global_memory)
+        return DevicePointer(offset, memory=self.global_memory)
 
-    def free(self, ptr: Any) -> None:
+    def free(self, ptr: DevicePointer) -> None:
         """Free a previously allocated :class:`DevicePointer`."""
 
         if not isinstance(ptr, DevicePointer):
@@ -188,7 +188,13 @@ class VirtualGPU:
         self.transfer_log.append(TransferEvent("D2H", size, start, end))
         return data
 
-    def memcpy(self, dest: Any, src: Any, size: int, direction: str) -> None:
+    def memcpy(
+        self,
+        dest: DevicePointer | int | bytes | None,
+        src: DevicePointer | int | bytes | None,
+        size: int,
+        direction: str,
+    ) -> None:
         """Copy data between host and device according to ``direction``."""
 
         dest_ptr = dest.offset if isinstance(dest, DevicePointer) else dest
