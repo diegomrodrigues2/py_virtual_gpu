@@ -15,15 +15,18 @@ class DummySM:
 
 def test_constant_memory_default_size_and_set():
     gpu = VirtualGPU(0, 32)
-    assert gpu.const_memory.size == 64 * 1024
+    assert gpu.constant_memory.size == 64 * 1024
     gpu.set_constant(b"abc")
-    assert gpu.const_memory.read(0, 3) == b"abc"
+    assert gpu.constant_memory.read(0, 3) == b"abc"
+
+    # ``const_memory`` remains for backward compatibility
+    assert gpu.const_memory is gpu.constant_memory
 
 
 def test_set_constant_bounds():
     gpu = VirtualGPU(0, 16)
     with pytest.raises(ValueError):
-        gpu.set_constant(b"a" * (gpu.const_memory.size + 1))
+        gpu.set_constant(b"a" * (gpu.constant_memory.size + 1))
 
 
 def test_launch_kernel_exposes_const_mem():
@@ -36,7 +39,8 @@ def test_launch_kernel_exposes_const_mem():
     gpu.launch_kernel(dummy, (1, 1, 1), (1, 1, 1))
     tb = gpu.sms[0].block_queue.get()
     t = tb.threads[0]
-    assert t.const_mem is gpu.const_memory
+    assert t.const_mem is gpu.constant_memory
+    assert t.constant_mem is gpu.constant_memory
 
 
 def test_read_constant_wrapper():

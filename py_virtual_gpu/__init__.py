@@ -29,6 +29,7 @@ from .memory_hierarchy import (
 )
 
 const_memory = ConstantMemory
+constant_memory = ConstantMemory
 
 __all__ = [
     "VirtualGPU",
@@ -49,6 +50,7 @@ __all__ = [
     "GlobalMemorySpace",
     "ConstantMemory",
     "const_memory",
+    "constant_memory",
     "LocalMemory",
     "HostMemory",
     "TransferEvent",
