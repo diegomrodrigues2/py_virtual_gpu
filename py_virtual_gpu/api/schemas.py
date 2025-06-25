@@ -44,3 +44,15 @@ class GPUState(BaseModel):
     transfer_log: list[TransferRecord]
     sms: list[SMState]
 
+
+class GPUMetrics(BaseModel):
+    """Aggregated metrics about GPU execution and transfers."""
+
+    id: int
+    instructions: int
+    global_accesses: int
+    shared_accesses: int
+    divergences: int
+    memory_stats: dict[str, int]
+    transfer_stats: dict[str, int]
+
