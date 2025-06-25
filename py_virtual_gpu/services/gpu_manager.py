@@ -61,6 +61,36 @@ class GPUManager:
 
         return GPUState(id=id, global_memory=gm_state, transfer_log=transfer_log, sms=sms)
 
+    def get_gpu_metrics(self, id: int):
+        """Return aggregated metrics for the GPU with ``id``."""
+
+        from ..api.schemas import GPUMetrics
+
+        gpu = self.get_gpu(id)
+
+        mem_stats = gpu.get_memory_stats()
+        transfer_stats = gpu.get_transfer_stats()
+
+        instructions = 0
+        global_accesses = 0
+        shared_accesses = 0
+        divergences = 0
+        for sm in gpu.sms:
+            instructions += sm.counters.get("warps_executed", 0)
+            global_accesses += sm.counters.get("non_coalesced_accesses", 0)
+            shared_accesses += sm.counters.get("bank_conflicts", 0)
+            divergences += sm.counters.get("warp_divergences", 0)
+
+        return GPUMetrics(
+            id=id,
+            instructions=instructions,
+            global_accesses=global_accesses,
+            shared_accesses=shared_accesses,
+            divergences=divergences,
+            memory_stats=mem_stats,
+            transfer_stats=transfer_stats,
+        )
+
 
 def get_gpu_manager() -> GPUManager:
     """FastAPI dependency returning the singleton :class:`GPUManager`."""
