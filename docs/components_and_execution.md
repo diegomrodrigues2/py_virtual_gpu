@@ -28,13 +28,21 @@ Os diferentes níveis da hierarquia são representados por subclasses de
 ``MemorySpace``. Cada uma possui latência e largura de banda conceituais que são
 acumuladas nos campos ``stats`` sempre que ``read`` ou ``write`` são chamados.
 Entre elas estão ``RegisterFile`` (registradores privados), ``SharedMemory``
-(on-chip), ``L1Cache`` e ``L2Cache`` (caches), ``GlobalMemorySpace`` e espaços
-específicos como ``ConstantMemory`` e ``LocalMemory``. ``ConstantMemory`` é uma
-região de somente leitura com tamanho padrão de ``64 KiB`` acessível a todas as
-threads. Um kernel pode obter esses dados via ``gpu = VirtualGPU.get_current();
-gpu.read_constant(addr, size)`` ou diretamente por ``thread.const_mem.read``.
-O método
+(on-chip), ``L1Cache``/``L2Cache`` (caches), ``GlobalMemorySpace`` e as regiões
+especializadas ``ConstantMemory`` e ``LocalMemory``. O método
 ``reset_stats()`` permite zerar os contadores para novas medições.
+
+### ConstantMemory
+
+``ConstantMemory`` é uma área de somente leitura (``64 KiB`` por padrão)
+compartilhada por todas as threads. O host copia valores usando
+``gpu.set_constant`` e os kernels podem ler via ``thread.const_mem.read`` ou
+``VirtualGPU.get_current().read_constant``.
+
+```python
+gpu.set_constant(b"ola")                     # host -> constant memory
+value = VirtualGPU.get_current().read_constant(0, 3)
+```
 
 ## Fluxo de Execução
 
@@ -109,7 +117,15 @@ obtidas por thread com ``thread.get_spill_stats()`` ou agregadas pela
 
 ## Memória Local por Thread
 
-Variáveis locais que não cabem nos registradores podem ser alocadas na
-``LocalMemory`` de cada thread. O método ``Thread.alloc_local(size)``
-retorna o deslocamento reservado nessa região para ser usado pelo kernel.
-Seu acesso possui a mesma latência e largura de banda da ``GlobalMemory``.
+``LocalMemory`` é privada de cada ``Thread`` e possui a mesma latência da
+``GlobalMemory``. Ela é usada para variáveis locais grandes e também para o
+``spill`` automático dos registradores. A região é limitada e os kernels podem
+reservar trechos com ``Thread.alloc_local``:
+
+```python
+@kernel(grid_dim=(1,1,1), block_dim=(1,1,1))
+def exemplo(threadIdx, blockIdx, blockDim, gridDim):
+    off = thread.alloc_local(4)
+    thread.local_mem.write(off, b"data")
+    valor = thread.local_mem.read(off, 4)
+```

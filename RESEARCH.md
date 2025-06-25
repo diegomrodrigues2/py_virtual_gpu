@@ -96,6 +96,7 @@ Para auxiliar na compreensão e na implementação, a Tabela 1 resume as caracte
 | **Memória Constante**     | Global (somente leitura)             | *Off-chip*        | Baixa (*cached*)    | Alta (*cached*)             | KB (ex: ~64KB)              | Dados de transmissão somente leitura                         |
 | **Memória Global**        | Global (todas as *threads*/*blocks*) | *Off-chip*        | Alta                | Moderada                    | GB (ex: ~32GB)              | Grandes conjuntos de dados, comunicação entre *blocks*       |
 | **Memória do Host**       | Sistema CPU                          | *Off-device*      | Muito Alta          | Variável                    | GB (RAM do sistema)         | Dados gerenciados pela CPU, I/O                              |
+A implementacao atual inclui classes para ``ConstantMemory`` e ``LocalMemory``, permitindo carregar dados constantes e alocar memoria privada por thread.
 
 
 
