@@ -109,14 +109,14 @@ class VirtualGPU:
 
         offset = self.global_memory.malloc(size)
         self._active_ptrs.add(offset)
-        return DevicePointer(offset)
+        return DevicePointer(offset, self.global_memory)
 
     def free(self, ptr: Any) -> None:
         """Free a previously allocated :class:`DevicePointer`."""
 
         if not isinstance(ptr, DevicePointer):
             raise TypeError("ptr must be a DevicePointer")
-        if ptr.offset not in self._active_ptrs:
+        if ptr.memory is not self.global_memory or ptr.offset not in self._active_ptrs:
             raise ValueError("Invalid or double free")
         self.global_memory.free(ptr.offset)
         self._active_ptrs.remove(ptr.offset)
@@ -134,7 +134,7 @@ class VirtualGPU:
 
         if not isinstance(device_ptr, DevicePointer):
             raise TypeError("device_ptr must be a DevicePointer")
-        if device_ptr.offset not in self._active_ptrs:
+        if device_ptr.memory is not self.global_memory or device_ptr.offset not in self._active_ptrs:
             raise ValueError("Invalid device pointer")
 
         size = len(host_buffer)
@@ -170,7 +170,7 @@ class VirtualGPU:
 
         if not isinstance(device_ptr, DevicePointer):
             raise TypeError("device_ptr must be a DevicePointer")
-        if device_ptr.offset not in self._active_ptrs:
+        if device_ptr.memory is not self.global_memory or device_ptr.offset not in self._active_ptrs:
             raise ValueError("Invalid device pointer")
         if size < 0:
             raise ValueError("Size must be positive")

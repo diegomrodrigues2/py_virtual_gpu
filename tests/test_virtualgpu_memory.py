@@ -4,16 +4,18 @@ import pytest
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from py_virtual_gpu import VirtualGPU, DevicePointer
+from py_virtual_gpu import VirtualGPU, DevicePointer, GlobalMemory
 
 
 def test_device_pointer_equality_and_repr():
-    a = DevicePointer(5)
-    b = DevicePointer(5)
-    c = DevicePointer(6)
+    gm = GlobalMemory(32)
+    a = DevicePointer(5, gm)
+    b = DevicePointer(5, gm)
+    c = DevicePointer(6, gm)
     assert a == b
     assert a != c
-    assert "offset=5" in repr(a)
+    text = repr(a)
+    assert "offset=5" in text and "mem=GlobalMemory" in text
 
 
 def test_gpu_malloc_free_and_reuse():
