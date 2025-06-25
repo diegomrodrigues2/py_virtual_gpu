@@ -13,6 +13,7 @@ from .streaming_multiprocessor import StreamingMultiprocessor  # type: ignore  #
 from .thread_block import ThreadBlock  # type: ignore  # noqa: F401
 from .memory_hierarchy import HostMemory, ConstantMemory
 from .transfer import TransferEvent
+from dataclasses import dataclass
 
 
 def _execute_block_worker(
@@ -21,6 +22,16 @@ def _execute_block_worker(
     """Helper for ``multiprocessing.Pool`` to execute a block."""
 
     tb.execute(func, *args)
+
+
+@dataclass
+class KernelLaunchEvent:
+    """Record a kernel launch invocation."""
+
+    name: str
+    grid_dim: Tuple[int, int, int]
+    block_dim: Tuple[int, int, int]
+    start_cycle: int
 
 
 class VirtualGPU:
@@ -79,7 +90,8 @@ class VirtualGPU:
             :meth:`launch_kernel`.
         """
         self.sms: List[StreamingMultiprocessor] = [
-            StreamingMultiprocessor(i, shared_mem_size, 64) for i in range(num_sms)
+            StreamingMultiprocessor(i, shared_mem_size, 64, parent_gpu=self)
+            for i in range(num_sms)
         ]
         self.global_memory: GlobalMemory = GlobalMemory(
             global_mem_size,
@@ -104,6 +116,7 @@ class VirtualGPU:
         self._active_ptrs: set[int] = set()
         self._launched_blocks: List[ThreadBlock] = []
         self.transfer_log: List[TransferEvent] = []
+        self.kernel_log: List[KernelLaunchEvent] = []
         self.counters: dict[str, int] = {"transfers": 0}
         self.stats: dict[str, int] = {"transfer_bytes": 0, "transfer_cycles": 0}
         self._cycle_counter: int = 0
@@ -276,6 +289,17 @@ class VirtualGPU:
         gx, gy, gz = (list(grid_dim) + [1, 1, 1])[:3]
         bx, by, bz = (list(block_dim) + [1, 1, 1])[:3]
 
+        start = self.current_cycle()
+        self.kernel_log.append(
+            KernelLaunchEvent(
+                name=getattr(kernel_func, "__name__", str(kernel_func)),
+                grid_dim=(gx, gy, gz),
+                block_dim=(bx, by, bz),
+                start_cycle=start,
+            )
+        )
+        self._cycle_counter += 1
+
         for z in range(gz):
             for y in range(gy):
                 for x in range(gx):
@@ -349,3 +373,8 @@ class VirtualGPU:
         """Return a copy of the log with all transfer events."""
 
         return list(self.transfer_log)
+
+    def get_kernel_log(self) -> List[KernelLaunchEvent]:
+        """Return a copy of the log with all kernel launch events."""
+
+        return list(self.kernel_log)

@@ -129,6 +129,34 @@ class GPUManager:
             counters=sm.counters.copy(),
         )
 
+    def get_event_feed(self, since_cycle: int | None = None, limit: int = 100):
+        """Return a global event feed aggregated from all GPUs."""
+
+        events = []
+        for gpu_id, gpu in enumerate(self._gpus):
+            for ev in gpu.get_kernel_log():
+                if since_cycle is None or ev.start_cycle >= since_cycle:
+                    item = asdict(ev)
+                    item["gpu_id"] = gpu_id
+                    item["type"] = "kernel"
+                    events.append(item)
+            for ev in gpu.get_transfer_log():
+                if since_cycle is None or ev.start_cycle >= since_cycle:
+                    item = asdict(ev)
+                    item["gpu_id"] = gpu_id
+                    item["type"] = "transfer"
+                    events.append(item)
+            for sm in gpu.sms:
+                for ev in sm.get_divergence_log():
+                    if since_cycle is None or ev.start_cycle >= since_cycle:
+                        item = asdict(ev)
+                        item["gpu_id"] = gpu_id
+                        item["type"] = "divergence"
+                        events.append(item)
+
+        events.sort(key=lambda e: e.get("start_cycle", 0))
+        return events[:limit]
+
 
 def get_gpu_manager() -> GPUManager:
     """FastAPI dependency returning the singleton :class:`GPUManager`."""

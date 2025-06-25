@@ -31,3 +31,14 @@ def read_status(
         "global_mem_size": gpu.global_memory.size,
         "shared_mem_size": gpu.shared_mem_size,
     }
+
+
+@app.get("/events")
+def get_events(
+    since_cycle: int | None = None,
+    limit: int = 100,
+    manager: GPUManager = Depends(get_gpu_manager),
+) -> list[dict]:
+    """Return a consolidated, time-ordered event feed."""
+
+    return manager.get_event_feed(since_cycle, limit)
