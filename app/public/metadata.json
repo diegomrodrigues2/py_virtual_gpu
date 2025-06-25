@@ -1,0 +1,5 @@
+{
+  "name": "GPU Simulator Dashboard",
+  "description": "A web application to visualize and monitor simulated GPU states, performance metrics, and events.",
+  "requestFramePermissions": []
+}
