@@ -27,6 +27,14 @@ graph TD
 
 O `VirtualGPU` distribui blocks para os SMs, que por sua vez instanciam warps e threads para executar o kernel.
 
+## Hierarquia de Memória
+
+Registradores, `SharedMemory`, `LocalMemory`, `ConstantMemory` e `GlobalMemory` são modelados com latências conceituais. Dados constantes podem ser carregados com `gpu.set_constant`:
+
+```python
+gpu.set_constant(b"valores")
+```
+
 
 ## Funcionalidades
 
