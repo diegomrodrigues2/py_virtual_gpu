@@ -46,6 +46,8 @@ class Thread:
         block_dim: Tuple[int, int, int] | None = None,
         grid_dim: Tuple[int, int, int] | None = None,
         register_mem_size: int = 0,
+        *,
+        local_mem_size: int | None = None,
         shared_mem: SharedMemory | None = None,
         global_mem: GlobalMemory | None = None,
         barrier: Barrier | None = None,
@@ -58,6 +60,9 @@ class Thread:
             Indices and dimensions identifying this thread within the grid.
         register_mem_size:
             Size in bytes of the private register file.
+        local_mem_size:
+            Capacity of the per-thread ``LocalMemory``. Defaults to the
+            same value as ``register_mem_size`` when ``None``.
         shared_mem, global_mem:
             References to the memory spaces accessible by the thread.
         barrier:
@@ -72,7 +77,10 @@ class Thread:
         self.grid_dim: Tuple[int, int, int] = grid_dim or (1, 1, 1)
 
         # Private register and spill memory
-        self.local_mem = LocalMemory(register_mem_size)
+        if local_mem_size is None:
+            local_mem_size = register_mem_size
+        self.local_mem = LocalMemory(local_mem_size)
+        self.local_ptr = 0
         self.registers = RegisterFile(
             register_mem_size,
             spill_granularity=4,
@@ -96,6 +104,18 @@ class Thread:
             "spill_bytes": self.registers.stats.get("spill_bytes", 0),
             "spill_cycles": self.registers.stats.get("spill_cycles", 0),
         }
+
+    # ------------------------------------------------------------------
+    # Local memory allocation
+    # ------------------------------------------------------------------
+    def alloc_local(self, size: int) -> int:
+        """Reserve ``size`` bytes in ``LocalMemory`` and return the offset."""
+
+        if self.local_ptr + size > self.local_mem.size:
+            raise MemoryError("Out of LocalMemory")
+        off = self.local_ptr
+        self.local_ptr += size
+        return off
 
     # ------------------------------------------------------------------
     # Execution

@@ -48,10 +48,12 @@ A implementação detalhada destas classes e de suas APIs será tratada nas **is
 
 **Principais atributos**
 - `registers`: memória privada de cada thread.
+- `local_mem`: área de `LocalMemory` para variáveis locais grandes e spill de registradores.
 - `thread_idx` e `block_idx`: índices que identificam a posição desta thread no grid.
 
 **Métodos principais**
 - `execute(kernel_func, *args)`: executa a função do kernel com os argumentos fornecidos.
+- `alloc_local(size)`: reserva espaço em `local_mem` para uso do kernel.
 - `read_write_memory(...)`: operações utilitárias para acessar a memória global ou compartilhada conforme necessário.
 
 

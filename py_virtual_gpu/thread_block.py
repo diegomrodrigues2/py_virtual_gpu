@@ -46,7 +46,13 @@ class ThreadBlock:
     # ------------------------------------------------------------------
     # Thread management
     # ------------------------------------------------------------------
-    def initialize_threads(self, kernel_func: Callable[..., Any], *args: Any) -> None:
+    def initialize_threads(
+        self,
+        kernel_func: Callable[..., Any],
+        *args: Any,
+        register_mem_size: int = 0,
+        local_mem_size: int | None = None,
+    ) -> None:
         """Instantiate :class:`Thread` objects for this block.
 
         Each created :class:`Thread` receives references to this block's
@@ -59,7 +65,10 @@ class ThreadBlock:
             for y in range(self.block_dim[1]):
                 for x in range(self.block_dim[0]):
                     thread_idx = (x, y, z)
-                    t = Thread()
+                    t = Thread(
+                        register_mem_size=register_mem_size,
+                        local_mem_size=local_mem_size,
+                    )
                     # Store context attributes for future use
                     setattr(t, "thread_idx", thread_idx)
                     setattr(t, "block_idx", self.block_idx)
