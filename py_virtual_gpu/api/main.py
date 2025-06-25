@@ -4,8 +4,10 @@ from fastapi import Depends, FastAPI
 
 from ..virtualgpu import VirtualGPU
 from ..services import GPUManager, get_gpu_manager
+from .routers import gpus as gpus_router
 
 app = FastAPI(title="Py Virtual GPU API")
+app.include_router(gpus_router.router)
 
 
 @app.on_event("startup")
