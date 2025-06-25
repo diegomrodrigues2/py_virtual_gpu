@@ -45,6 +45,9 @@ gpu.set_constant(b"valores")
 - Memoria constante (`64 KiB` por padrao) acessivel por
   `gpu = VirtualGPU.get_current(); gpu.read_constant(...)` ou `thread.const_mem.read(...)`.
 - `Thread.alloc_local(size)` permite reservar bytes em `LocalMemory` para variáveis locais grandes do kernel.
+- Ponteiros retornados por `malloc` são objetos `DevicePointer` e agora aceitam
+  aritmética e indexação (`ptr + n`, `ptr[i]`, etc.), imitando a sintaxe do
+  CUDA C++.
 
 ## Exemplo rapido
 
