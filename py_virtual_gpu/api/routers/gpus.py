@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends
 
 from ...services import GPUManager, get_gpu_manager
-from ..schemas import GPUSummary
+from ..schemas import GPUSummary, GPUState
 
 router = APIRouter()
 
@@ -22,3 +22,10 @@ def list_gpus(manager: GPUManager = Depends(get_gpu_manager)) -> list[GPUSummary
             )
         )
     return summaries
+
+
+@router.get("/gpus/{id}/state", response_model=GPUState)
+def gpu_state(id: int, manager: GPUManager = Depends(get_gpu_manager)) -> GPUState:
+    """Return a detailed snapshot for the GPU with ``id``."""
+
+    return manager.get_gpu_state(id)
