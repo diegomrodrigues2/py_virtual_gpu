@@ -1,6 +1,6 @@
 """Top-level package for the virtual GPU simulator."""
 
-from .virtualgpu import VirtualGPU
+from .virtualgpu import VirtualGPU, KernelLaunchEvent
 from .global_memory import GlobalMemory
 from .memory import DevicePointer
 from .streaming_multiprocessor import StreamingMultiprocessor, DivergenceEvent
@@ -54,6 +54,7 @@ __all__ = [
     "LocalMemory",
     "HostMemory",
     "TransferEvent",
+    "KernelLaunchEvent",
     "atomicAdd",
     "atomicSub",
     "atomicCAS",

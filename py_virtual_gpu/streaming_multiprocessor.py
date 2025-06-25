@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from multiprocessing import Queue
 from queue import Queue as LocalQueue
-from typing import List, Dict
+from typing import List, Dict, Optional, TYPE_CHECKING
 from dataclasses import dataclass
 
 from .shared_memory import SharedMemory  # type: ignore
@@ -12,6 +12,9 @@ from .thread_block import ThreadBlock  # type: ignore
 from .thread import Thread  # type: ignore
 from .warp import Warp
 from .dispatch import Instruction
+
+if TYPE_CHECKING:  # pragma: no cover - type hinting
+    from .virtualgpu import VirtualGPU
 
 
 @dataclass
@@ -22,6 +25,7 @@ class DivergenceEvent:
     pc: int
     mask_before: List[bool]
     mask_after: List[bool]
+    start_cycle: int = 0
 
 
 class StreamingMultiprocessor:
@@ -33,6 +37,8 @@ class StreamingMultiprocessor:
         shared_mem_size: int,
         max_registers_per_thread: int,
         warp_size: int = 32,
+        *,
+        parent_gpu: Optional["VirtualGPU"] = None,
     ) -> None:
         """Initialize the SM with configuration parameters."""
         self.id: int = id
@@ -50,6 +56,7 @@ class StreamingMultiprocessor:
         }
         self.stats: Dict[str, int] = {"extra_cycles": 0}
         self.divergence_log: List[DivergenceEvent] = []
+        self.gpu = parent_gpu
 
     # ------------------------------------------------------------------
     # Execution
@@ -131,13 +138,17 @@ class StreamingMultiprocessor:
         """Record a warp divergence event and store it in ``divergence_log``."""
 
         self.counters["warp_divergences"] += 1
+        start = self.gpu.current_cycle() if self.gpu is not None else len(self.divergence_log)
         event = DivergenceEvent(
             warp_id=warp.id,
             pc=pc,
             mask_before=mask_before.copy(),
             mask_after=mask_after.copy(),
+            start_cycle=start,
         )
         self.divergence_log.append(event)
+        if self.gpu is not None:
+            self.gpu._cycle_counter += 1
 
     def get_divergence_log(self) -> List[DivergenceEvent]:
         """Return a list with all recorded divergence events."""
