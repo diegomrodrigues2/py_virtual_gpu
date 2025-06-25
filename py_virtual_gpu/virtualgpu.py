@@ -225,6 +225,13 @@ class VirtualGPU:
     ) -> None:
         """Copy data between host and device according to ``direction``."""
 
+        # GlobalMemory.memcpy expects the device offset as the first argument
+        # when performing a DeviceToHost transfer. In that case, the host
+        # destination is ignored, so we pass ``None`` for the second argument.
+        if direction == "DeviceToHost":
+            src_ptr = src.offset if isinstance(src, DevicePointer) else src
+            return self.global_memory.memcpy(src_ptr, None, size, direction)
+
         dest_ptr = dest.offset if isinstance(dest, DevicePointer) else dest
         src_ptr = src.offset if isinstance(src, DevicePointer) else src
         return self.global_memory.memcpy(dest_ptr, src_ptr, size, direction)

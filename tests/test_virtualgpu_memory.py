@@ -85,3 +85,21 @@ def test_memcpy_validation_errors():
     with pytest.raises(ValueError):
         gpu.memcpy_host_to_device(b"abcd", ptr)
 
+
+def test_generic_memcpy_operations():
+    gpu = VirtualGPU(0, 32)
+    ptr = gpu.malloc(6)
+
+    # Host to Device
+    gpu.memcpy(ptr, b"abcdef", 6, "HostToDevice")
+    assert gpu.global_memory.read(ptr.offset, 6) == b"abcdef"
+
+    # Device to Host
+    out = gpu.memcpy(None, ptr, 6, "DeviceToHost")
+    assert out == b"abcdef"
+
+    # Device to Device
+    dest = gpu.malloc(6)
+    gpu.memcpy(dest, ptr, 6, "DeviceToDevice")
+    assert gpu.global_memory.read(dest.offset, 6) == b"abcdef"
+
