@@ -78,15 +78,32 @@ class GlobalMemory:
     # ------------------------------------------------------------------
     # Raw memory access
     # ------------------------------------------------------------------
-    def read(self, ptr: int, size: int) -> bytes:
-        """Return ``size`` bytes from ``ptr``."""
-        with self.lock:
-            return bytes(self.buffer[ptr : ptr + size])
+    def read(self, ptr: int | "DevicePointer", size: int) -> bytes:
+        """Return ``size`` bytes starting at ``ptr``.
 
-    def write(self, ptr: int, data: bytes) -> None:
-        """Write ``data`` starting at ``ptr``."""
+        Parameters
+        ----------
+        ptr:
+            Offset inside the buffer or a :class:`DevicePointer` referring
+            to this memory.
+        size:
+            Number of bytes to read.
+        """
+
+        off = ptr.offset if hasattr(ptr, "offset") else ptr
         with self.lock:
-            self.buffer[ptr : ptr + len(data)] = data
+            return bytes(self.buffer[off : off + size])
+
+    def write(self, ptr: int | "DevicePointer", data: bytes) -> None:
+        """Write ``data`` starting at ``ptr``.
+
+        ``ptr`` can be an integer offset or a :class:`DevicePointer` owned by
+        this memory.
+        """
+
+        off = ptr.offset if hasattr(ptr, "offset") else ptr
+        with self.lock:
+            self.buffer[off : off + len(data)] = data
 
     # ------------------------------------------------------------------
     # Atomic operations
@@ -119,9 +136,7 @@ class GlobalMemory:
             )
             return old
 
-    def atomic_cas(
-        self, ptr: int, expected: int, new: int, num_bytes: int = 4
-    ) -> bool:
+    def atomic_cas(self, ptr: int, expected: int, new: int, num_bytes: int = 4) -> bool:
         """Compare-and-swap value at ``ptr``."""
 
         if ptr < 0 or ptr + num_bytes > self.size:
@@ -177,7 +192,9 @@ class GlobalMemory:
             )
             return old
 
-    def memcpy(self, dest_ptr: int, src: int | bytes, size: int, direction: str) -> bytes | None:
+    def memcpy(
+        self, dest_ptr: int, src: int | bytes, size: int, direction: str
+    ) -> bytes | None:
         """Copy memory between host and device.
 
         Parameters
@@ -208,5 +225,5 @@ class GlobalMemory:
             return None
         raise ValueError(f"Unknown direction: {direction}")
 
-__all__ = ["GlobalMemory"]
 
+__all__ = ["GlobalMemory"]

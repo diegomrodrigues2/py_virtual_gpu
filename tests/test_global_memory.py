@@ -4,7 +4,7 @@ import pytest
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from py_virtual_gpu import GlobalMemory
+from py_virtual_gpu import GlobalMemory, DevicePointer
 
 
 def test_malloc_write_read():
@@ -12,6 +12,14 @@ def test_malloc_write_read():
     ptr = gm.malloc(8)
     gm.write(ptr, b"abcdefgh")
     assert gm.read(ptr, 8) == b"abcdefgh"
+
+
+def test_read_write_with_device_pointer():
+    gm = GlobalMemory(16)
+    off = gm.malloc(4)
+    dp = DevicePointer(off, gm)
+    gm.write(dp, b"abcd")
+    assert gm.read(dp, 4) == b"abcd"
 
 
 def test_malloc_free_reuse():
@@ -39,4 +47,3 @@ def test_memcpy_device_to_device():
     gm.write(src, b"1234")
     gm.memcpy(dest, src, 4, "DeviceToDevice")
     assert gm.read(dest, 4) == b"1234"
-
