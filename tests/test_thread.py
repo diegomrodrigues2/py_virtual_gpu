@@ -85,6 +85,6 @@ def test_alloc_local_and_latency():
 def test_alloc_local_overflow():
     t = Thread(register_mem_size=4, local_mem_size=4)
     t.alloc_local(4)
-    with pytest.raises(MemoryError):
+    with pytest.raises(IndexError):
         t.alloc_local(1)
 
