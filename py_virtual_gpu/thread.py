@@ -112,7 +112,7 @@ class Thread:
         """Reserve ``size`` bytes in ``LocalMemory`` and return the offset."""
 
         if self.local_ptr + size > self.local_mem.size:
-            raise MemoryError("Out of LocalMemory")
+            raise IndexError("Out of LocalMemory")
         off = self.local_ptr
         self.local_ptr += size
         return off
