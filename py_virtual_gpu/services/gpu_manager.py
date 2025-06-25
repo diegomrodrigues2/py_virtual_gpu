@@ -1,0 +1,45 @@
+from __future__ import annotations
+
+from typing import List
+
+from ..virtualgpu import VirtualGPU
+
+
+class GPUManager:
+    """Singleton manager for :class:`VirtualGPU` instances."""
+
+    _instance: "GPUManager" | None = None
+
+    def __new__(cls) -> "GPUManager":
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._instance._gpus: List[VirtualGPU] = []
+        return cls._instance
+
+    # simple init that does nothing to avoid reinitializing on repeated calls
+    def __init__(self) -> None:  # pragma: no cover - __new__ handles singleton init
+        pass
+
+    def add_gpu(self, gpu: VirtualGPU) -> int:
+        """Register ``gpu`` and return its id."""
+
+        self._gpus.append(gpu)
+        return len(self._gpus) - 1
+
+    def list_gpus(self) -> List[VirtualGPU]:
+        """Return a list of registered GPUs."""
+
+        return list(self._gpus)
+
+    def get_gpu(self, id: int) -> VirtualGPU:
+        """Return the GPU with ``id`` or raise ``IndexError`` if not found."""
+
+        if id < 0 or id >= len(self._gpus):
+            raise IndexError("Invalid GPU id")
+        return self._gpus[id]
+
+
+def get_gpu_manager() -> GPUManager:
+    """FastAPI dependency returning the singleton :class:`GPUManager`."""
+
+    return GPUManager()
