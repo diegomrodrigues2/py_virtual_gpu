@@ -56,3 +56,36 @@ class GPUMetrics(BaseModel):
     memory_stats: dict[str, int]
     transfer_stats: dict[str, int]
 
+
+class BlockSummary(BaseModel):
+    """Minimal information about a block scheduled on an SM."""
+
+    block_idx: tuple[int, int, int]
+    status: str
+
+
+class WarpSummary(BaseModel):
+    """Basic state for a warp queued on an SM."""
+
+    id: int
+    active_threads: int
+
+
+class DivergenceRecord(BaseModel):
+    """Serialized record of a warp divergence event."""
+
+    warp_id: int
+    pc: int
+    mask_before: list[bool]
+    mask_after: list[bool]
+
+
+class SMDetailed(BaseModel):
+    """Detailed information for a single StreamingMultiprocessor."""
+
+    id: int
+    blocks: list[BlockSummary]
+    warps: list[WarpSummary]
+    divergence_log: list[DivergenceRecord]
+    counters: dict[str, int]
+

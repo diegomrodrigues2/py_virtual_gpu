@@ -91,6 +91,44 @@ class GPUManager:
             transfer_stats=transfer_stats,
         )
 
+    def get_sm_detail(self, gpu_id: int, sm_id: int, max_events: int = 100):
+        """Return detailed information for ``sm_id`` of GPU ``gpu_id``."""
+
+        from ..api.schemas import SMDetailed, BlockSummary, WarpSummary, DivergenceRecord
+
+        gpu = self.get_gpu(gpu_id)
+        if sm_id < 0 or sm_id >= len(gpu.sms):
+            raise IndexError("Invalid SM id")
+        sm = gpu.sms[sm_id]
+
+        try:
+            pending_blocks = list(sm.block_queue.queue)
+        except AttributeError:  # multiprocessing.Queue may not expose 'queue'
+            pending_blocks = []
+
+        blocks: list[BlockSummary] = []
+        for tb in pending_blocks:
+            blocks.append(BlockSummary(block_idx=tb.block_idx, status="pending"))
+
+        try:
+            queued_warps = list(sm.warp_queue.queue)
+        except AttributeError:
+            queued_warps = []
+
+        warps: list[WarpSummary] = []
+        for warp in queued_warps:
+            warps.append(WarpSummary(id=warp.id, active_threads=sum(warp.active_mask)))
+
+        log = [DivergenceRecord(**asdict(ev)) for ev in sm.divergence_log[-max_events:]]
+
+        return SMDetailed(
+            id=sm.id,
+            blocks=blocks,
+            warps=warps,
+            divergence_log=log,
+            counters=sm.counters.copy(),
+        )
+
 
 def get_gpu_manager() -> GPUManager:
     """FastAPI dependency returning the singleton :class:`GPUManager`."""
