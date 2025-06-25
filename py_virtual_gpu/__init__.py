@@ -8,6 +8,14 @@ from .thread_block import ThreadBlock
 from .warp import Warp, is_coalesced
 from .dispatch import Instruction, SIMTStack
 from .transfer import TransferEvent
+from .atomics import (
+    atomicAdd,
+    atomicSub,
+    atomicCAS,
+    atomicMax,
+    atomicMin,
+    atomicExchange,
+)
 from .memory_hierarchy import (
     MemorySpace,
     RegisterFile,
@@ -44,5 +52,11 @@ __all__ = [
     "LocalMemory",
     "HostMemory",
     "TransferEvent",
+    "atomicAdd",
+    "atomicSub",
+    "atomicCAS",
+    "atomicMax",
+    "atomicMin",
+    "atomicExchange",
 ]
 
