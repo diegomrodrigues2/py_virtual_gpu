@@ -74,10 +74,10 @@ def hello(threadIdx, blockIdx, blockDim, gridDim, msg):
 
 hello("Oi")
 
-ptr = gpu.malloc(4)
-gpu.memcpy_host_to_device(b"data", ptr)
-data = gpu.memcpy_device_to_host(ptr, 4)
-print(data)
+ptr = gpu.malloc(8)
+ptr[0] = b"abcd"
+ptr[1] = b"efgh"
+print(ptr[0], ptr[1])
 gpu.free(ptr)
 
 # Leitura de memoria constante

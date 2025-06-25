@@ -38,14 +38,24 @@ class DevicePointer:
     # Memory access helpers
     # ------------------------------------------------------------------
     def __getitem__(self, index: int) -> bytes:
+        """Return the element at ``index`` from the current device's global memory."""
+
+        from .virtualgpu import VirtualGPU
+
         off = self.offset + index * self.element_size
-        return self.memory.read(off, self.element_size)
+        gpu = VirtualGPU.get_current()
+        return gpu.global_memory.read(off, self.element_size)
 
     def __setitem__(self, index: int, data: bytes) -> None:
+        """Store ``data`` into ``index`` on the current device's global memory."""
+
+        from .virtualgpu import VirtualGPU
+
         if len(data) != self.element_size:
             raise ValueError("data length must match element_size")
         off = self.offset + index * self.element_size
-        self.memory.write(off, data)
+        gpu = VirtualGPU.get_current()
+        gpu.global_memory.write(off, data)
 
     # ------------------------------------------------------------------
     # Representation helpers
