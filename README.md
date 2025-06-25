@@ -48,8 +48,19 @@ gpu.set_constant(b"valores")
 - Ponteiros retornados por `malloc` são objetos `DevicePointer` e agora aceitam
   aritmética e indexação (`ptr + n`, `ptr[i]`, etc.), imitando a sintaxe do
   CUDA C++.
+- Funcoes `atomicAdd`, `atomicSub`, `atomicCAS`, `atomicMax`, `atomicMin` e `atomicExchange` realizam operacoes atomicas sobre `DevicePointer`. Os mesmos metodos continuam disponiveis em `SharedMemory` e `GlobalMemory`.
+### Operacoes Atomicas
+
+```python
+from py_virtual_gpu import kernel, atomicAdd
+
+@kernel(grid_dim=(1, 1, 1), block_dim=(4, 1, 1))
+def incr(threadIdx, blockIdx, blockDim, gridDim, counter_ptr):
+    atomicAdd(counter_ptr, 1)
+```
 
 ## Exemplo rapido
+
 
 ```python
 from py_virtual_gpu import VirtualGPU, kernel
