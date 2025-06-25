@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { GPUState, SimulatorEvent, GpuSummary, BackendData } from './types';
-import { fetchBackendData } from './gpuSimulatorService';
+import { fetchBackendData, fetchGpuState } from './gpuSimulatorService';
 import { IconChip, IconMemory, IconActivity, IconInfo, IconChevronDown, IconChevronUp, Tooltip, MemoryUsageDisplay, SmCard, GpuOverviewCard, TransfersDisplay, EventLog, IconGpu, IconLink, StatDisplay } from './components';
 
 
@@ -16,7 +16,7 @@ interface DashboardLayoutProps {
   onSetView: (view: 'cluster' | 'detail') => void; // Changed from onToggleView
 }
 
-const DashboardLayout: React.FC<DashboardLayoutProps> = ({
+export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   gpuSummaries, selectedGpu, events, onSelectGpu, isLoading, currentView, onSetView, allGpuStates
 }) => {
   const selectedGpuId = selectedGpu?.id;
@@ -61,25 +61,24 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         )}
       </div>
 
-      {currentView === 'cluster' && allGpuStates.length > 0 && (
-        <GpuClusterView 
-          summaries={gpuSummaries} 
-          onSelectGpu={(id) => { 
-            onSelectGpu(id); 
-            onSetView('detail'); // Directly set view to detail
-          }} 
-          selectedGpuId={selectedGpuId} 
+      {currentView === 'cluster' && (
+        <GpuClusterView
+          summaries={gpuSummaries}
+          onSelectGpu={handleSelectGpu}
+          selectedGpuId={selectedGpuId}
         />
       )}
       
-      {currentView === 'detail' && selectedGpu && (
-        <GpuDetailView gpu={selectedGpu} />
-      )}
-      
-      {currentView === 'detail' && !selectedGpu && allGpuStates.length > 0 && !isLoading && (
-         <div className="text-center py-10 bg-gray-800 rounded-lg">
-           <p className="text-xl text-gray-400">Select a GPU to see details or switch to Cluster View.</p>
-         </div>
+      {currentView === 'detail' && (
+        selectedGpu ? (
+          <GpuDetailView gpu={selectedGpu} />
+        ) : (
+          !isLoading && (
+            <div className="text-center py-10 bg-gray-800 rounded-lg">
+              <p className="text-xl text-gray-400">Select a GPU to see details or switch to Cluster View.</p>
+            </div>
+          )
+        )
       )}
 
       {/* Render EventLog if there's data, or selectedGpu for detail view context */}
@@ -166,6 +165,7 @@ const GpuDetailView: React.FC<{ gpu: GPUState }> = ({ gpu }) => (
 const App: React.FC = () => {
   const [backendData, setBackendData] = useState<BackendData | null>(null);
   const [selectedGpuId, setSelectedGpuId] = useState<string | null>(null);
+  const [selectedGpuState, setSelectedGpuState] = useState<GPUState | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<'cluster' | 'detail'>('cluster');
@@ -204,6 +204,16 @@ const App: React.FC = () => {
     const intervalId = setInterval(loadData, 3000); 
     return () => clearInterval(intervalId);
   }, [loadData]);
+  const handleSelectGpu = async (id: string) => {
+    setSelectedGpuId(id);
+    try {
+      const state = await fetchGpuState(id);
+      setSelectedGpuState(state);
+    } catch (err) {
+      console.error('Failed to fetch GPU state', err);
+    }
+    handleSetView('detail');
+  };
 
   const handleSetView = (newView: 'cluster' | 'detail') => {
     if (newView === 'detail') {
@@ -219,7 +229,7 @@ const App: React.FC = () => {
     setCurrentView(newView);
   };
   
-  const selectedGpu = backendData?.gpuStates.find(gpu => gpu.id === selectedGpuId);
+  const selectedGpu = selectedGpuState ?? backendData?.gpuStates.find(gpu => gpu.id === selectedGpuId);
 
   useEffect(() => {
     if (backendData) {
@@ -283,7 +293,7 @@ const App: React.FC = () => {
           selectedGpu={selectedGpu}
           allGpuStates={backendData.gpuStates}
           events={backendData.events}
-          onSelectGpu={setSelectedGpuId}
+          onSelectGpu={handleSelectGpu}
           isLoading={isLoading && !!backendData} 
           currentView={currentView}
           onSetView={handleSetView} // Changed from onToggleView

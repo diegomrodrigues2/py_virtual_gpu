@@ -45,7 +45,13 @@ class GPUManager:
     def get_gpu_state(self, id: int):
         """Return a detailed snapshot of the GPU with ``id``."""
 
-        from ..api.schemas import GPUState, SMState, GlobalMemState, TransferRecord
+        from ..api.schemas import (
+            GPUState,
+            SMState,
+            GlobalMemState,
+            TransferRecord,
+            GPUConfig,
+        )
 
         gpu = self.get_gpu(id)
 
@@ -59,7 +65,28 @@ class GPUManager:
             status = "idle" if sm.block_queue.empty() and sm.warp_queue.empty() else "busy"
             sms.append(SMState(id=sm.id, status=status, counters=sm.counters.copy()))
 
-        return GPUState(id=id, global_memory=gm_state, transfer_log=transfer_log, sms=sms)
+        active_sms = sum(1 for sm in sms if sm.status != "idle")
+        overall_load = int((active_sms / len(sms)) * 100) if sms else 0
+
+        config = GPUConfig(
+            num_sms=len(gpu.sms),
+            global_mem_size=gpu.global_memory.size,
+            shared_mem_size=gpu.shared_mem_size,
+            registers_per_sm_total=getattr(gpu.sms[0], "max_registers_per_thread", 0)
+            * getattr(gpu.sms[0], "warp_size", 32)
+            if gpu.sms
+            else 0,
+        )
+
+        return GPUState(
+            id=id,
+            name=f"GPU {id}",
+            config=config,
+            global_memory=gm_state,
+            transfer_log=transfer_log,
+            sms=sms,
+            overall_load=overall_load,
+        )
 
     def get_gpu_metrics(self, id: int):
         """Return aggregated metrics for the GPU with ``id``."""
