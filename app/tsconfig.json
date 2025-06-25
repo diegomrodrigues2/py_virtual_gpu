@@ -25,6 +25,7 @@
 
     "paths": {
       "@/*" :  ["./*"]
-    }
+    },
+    "types": ["vitest/globals"]
   }
 }
