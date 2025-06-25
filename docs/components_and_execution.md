@@ -63,6 +63,19 @@ ptr = gpu.malloc(256)
 gpu.memcpy_host_to_device(b"\x00" * 256, ptr)
 data = gpu.memcpy_device_to_host(ptr, 256)
 ```
+- Os ponteiros retornados por `malloc` são instâncias de `DevicePointer` que
+  aceitam aritmética e indexação (`ptr + n`, `ptr[i]`, etc.), permitindo sintaxe
+  semelhante ao CUDA C++. Abaixo um exemplo de kernel que multiplica vetores
+  utilizando `ptr[i]`:
+
+```python
+@kernel(grid_dim=(1, 1, 1), block_dim=(4, 1, 1))
+def vec_mul(threadIdx, blockIdx, blockDim, gridDim, a_ptr, b_ptr, out_ptr):
+    i = threadIdx[0]
+    a = int.from_bytes(a_ptr[i], "little")
+    b = int.from_bytes(b_ptr[i], "little")
+    out_ptr[i] = (a * b).to_bytes(4, "little")
+```
 - O decorador `@kernel` transforma funcoes Python em kernels e utiliza o dispositivo definido por `VirtualGPU.set_current`.
 - `launch_kernel` divide o grid em `ThreadBlock`s e distribui entre os SMs, expondo `threadIdx`, `blockIdx`, `blockDim` e `gridDim` para o kernel.
 - `ThreadBlock.barrier_sync()` permite que as threads de um block aguardem umas
