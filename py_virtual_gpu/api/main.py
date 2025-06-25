@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
+
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -7,7 +9,18 @@ from ..virtualgpu import VirtualGPU
 from ..services import GPUManager, get_gpu_manager
 from .routers import gpus as gpus_router
 
-app = FastAPI(title="Py Virtual GPU API")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Register a default GPU instance when the application starts."""
+
+    manager = get_gpu_manager()
+    if not manager.list_gpus():
+        manager.add_gpu(VirtualGPU(num_sms=1, global_mem_size=1024))
+    yield
+
+
+app = FastAPI(title="Py Virtual GPU API", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],
@@ -16,15 +29,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(gpus_router.router)
-
-
-@app.on_event("startup")
-def startup_event() -> None:
-    """Register a default GPU instance on application startup."""
-
-    manager = get_gpu_manager()
-    if not manager.list_gpus():
-        manager.add_gpu(VirtualGPU(num_sms=1, global_mem_size=1024))
 
 
 @app.get("/status")
