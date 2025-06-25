@@ -69,5 +69,12 @@ O simulador permite visualizar concretamente como abstrações de alto nível (k
 
 ---
 
+### 7. Validação com Exemplos Educacionais
+
+- **7.1** Implementação do exemplo de multiplicação de vetores com uso de ponteiros indexáveis
+- **7.2** Implementação do exemplo de convolução 2D utilizando memória compartilhada e constante
+- **7.3** Inclusão de testes para garantir que esses exemplos executam com sucesso
+- **7.4** Criação da pasta `examples/` contendo os scripts dos exemplos
+
 **Link para as issues:**  
 https://github.com/diegomrodrigues2/py_virtual_gpu/issues
