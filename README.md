@@ -96,3 +96,28 @@ make dev-api
 
 A documentação Swagger estará disponível em http://localhost:8000/docs.
 
+## Setup de desenvolvimento
+
+Antes de executar a suíte de testes, instale o pacote com as dependências opcionais definidas em `[project.optional-dependencies]` do `pyproject.toml`:
+
+```bash
+pip install -e .[api]
+```
+
+Em seguida instale os pacotes de desenvolvimento listados em `requirements.txt`:
+
+```bash
+pip install -r requirements.txt
+```
+
+Por fim, rode a suíte de testes:
+
+```bash
+pytest
+```
+
+## Contribuindo
+
+Consulte [CONTRIBUTING.md](CONTRIBUTING.md) para mais detalhes de como contribuir.
+
+
