@@ -15,7 +15,9 @@ from .memory_hierarchy import HostMemory, ConstantMemory
 from .transfer import TransferEvent
 
 
-def _execute_block_worker(tb: ThreadBlock, func: Callable[..., Any], args: Tuple[Any, ...]) -> None:
+def _execute_block_worker(
+    tb: ThreadBlock, func: Callable[..., Any], args: Tuple[Any, ...]
+) -> None:
     """Helper for ``multiprocessing.Pool`` to execute a block."""
 
     tb.execute(func, *args)
@@ -77,11 +79,12 @@ class VirtualGPU:
             :meth:`launch_kernel`.
         """
         self.sms: List[StreamingMultiprocessor] = [
-            StreamingMultiprocessor(i, shared_mem_size, 64)
-            for i in range(num_sms)
+            StreamingMultiprocessor(i, shared_mem_size, 64) for i in range(num_sms)
         ]
         self.global_memory: GlobalMemory = GlobalMemory(
-            global_mem_size, latency_cycles=device_latency_cycles, bandwidth_bytes_per_cycle=device_bandwidth_bpc
+            global_mem_size,
+            latency_cycles=device_latency_cycles,
+            bandwidth_bytes_per_cycle=device_bandwidth_bpc,
         )
         self.global_mem = self.global_memory  # alias for documentation purposes
         self.host_mem = HostMemory(
@@ -129,17 +132,24 @@ class VirtualGPU:
         """Return the current simulated cycle."""
 
         return self._cycle_counter
-    def memcpy_host_to_device(self, host_buffer: bytes, device_ptr: DevicePointer) -> None:
+
+    def memcpy_host_to_device(
+        self, host_buffer: bytes, device_ptr: DevicePointer
+    ) -> None:
         """Copy ``host_buffer`` into ``device_ptr`` recording transfer metrics."""
 
         if not isinstance(device_ptr, DevicePointer):
             raise TypeError("device_ptr must be a DevicePointer")
-        if device_ptr.memory is not self.global_memory or device_ptr.offset not in self._active_ptrs:
+        if (
+            device_ptr.memory is not self.global_memory
+            or device_ptr.offset not in self._active_ptrs
+        ):
             raise ValueError("Invalid device pointer")
 
         size = len(host_buffer)
         start = self.current_cycle()
-        self.global_memory.write(device_ptr.offset, host_buffer)
+        # GlobalMemory.write now accepts a DevicePointer directly
+        self.global_memory.write(device_ptr, host_buffer)
         cycles = self.host_mem.latency_cycles_host_to_device + ceil(
             size / self.host_mem.bandwidth_bpc_host_to_device
         )
@@ -170,13 +180,17 @@ class VirtualGPU:
 
         if not isinstance(device_ptr, DevicePointer):
             raise TypeError("device_ptr must be a DevicePointer")
-        if device_ptr.memory is not self.global_memory or device_ptr.offset not in self._active_ptrs:
+        if (
+            device_ptr.memory is not self.global_memory
+            or device_ptr.offset not in self._active_ptrs
+        ):
             raise ValueError("Invalid device pointer")
         if size < 0:
             raise ValueError("Size must be positive")
 
         start = self.current_cycle()
-        data = self.global_memory.read(device_ptr.offset, size)
+        # GlobalMemory.read now accepts a DevicePointer directly
+        data = self.global_memory.read(device_ptr, size)
         cycles = self.global_memory.latency_cycles + ceil(
             size / self.global_memory.bandwidth_bpc
         )
