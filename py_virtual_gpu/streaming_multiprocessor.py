@@ -74,6 +74,8 @@ class StreamingMultiprocessor:
             self._run_sequential(warps)
             while not self.warp_queue.empty():
                 self.warp_queue.get()
+        elif self.schedule_policy == "round_robin":
+            self._run_round_robin()
         else:
             self.dispatch()
 
@@ -111,8 +113,7 @@ class StreamingMultiprocessor:
                 warp: Warp = self.warp_queue.get_nowait()
             except Exception:
                 break
-            inst = Instruction("NOP", tuple())
-            warp.issue_instruction(inst)
+            warp.execute()
             self.counters["warps_executed"] += 1
             if any(warp.active_mask):
                 self.warp_queue.put(warp)
