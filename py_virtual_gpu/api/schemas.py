@@ -36,13 +36,27 @@ class SMState(BaseModel):
     counters: dict[str, int]
 
 
+class GPUConfig(BaseModel):
+    """Configuration details for a GPU."""
+
+    num_sms: int
+    global_mem_size: int
+    shared_mem_size: int
+    registers_per_sm_total: int | None = None
+
+
 class GPUState(BaseModel):
     """Detailed snapshot of a GPU."""
 
     id: int
+    name: str
+    config: GPUConfig
     global_memory: GlobalMemState
     transfer_log: list[TransferRecord]
     sms: list[SMState]
+    overall_load: int
+    temperature: int | None = None
+    power_draw_watts: int | None = None
 
 
 class GPUMetrics(BaseModel):

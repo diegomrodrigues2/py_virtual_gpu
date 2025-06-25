@@ -63,3 +63,15 @@ def test_state_endpoint_reports_warps(policy):
         assert data["sms"][0]["counters"]["warps_executed"] == 2
 
 
+def test_state_endpoint_includes_config_and_load():
+    _setup_gpu(num_sms=1)
+    with TestClient(app) as client:
+        resp = client.get("/gpus/0/state")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["name"] == "GPU 0"
+        assert data["config"]["num_sms"] == 1
+        assert data["config"]["global_mem_size"] == 64
+        assert "overall_load" in data
+
+
