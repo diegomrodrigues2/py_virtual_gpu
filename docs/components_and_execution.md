@@ -84,6 +84,22 @@ def vec_mul(threadIdx, blockIdx, blockDim, gridDim, a_ptr, b_ptr, out_ptr):
 - A classe `SharedMemory` expõe operações atômicas (`atomic_add`, `atomic_sub`,
   `atomic_cas`, `atomic_max`, `atomic_min`, `atomic_exchange`) que permitem
   atualização segura de valores compartilhados entre threads.
+## Operações Atômicas
+
+A biblioteca também fornece *helpers* de alto nível para realizar operações atômicas diretamente sobre ``DevicePointer`` na ``GlobalMemory``. As funções ``atomicAdd``, ``atomicSub``, ``atomicCAS``, ``atomicMax``, ``atomicMin`` e ``atomicExchange`` recebem o ponteiro e o valor desejado, retornando o valor anterior.
+
+```python
+from py_virtual_gpu import kernel, atomicAdd
+
+@kernel(grid_dim=(1, 1, 1), block_dim=(4, 1, 1))
+def incr(threadIdx, blockIdx, blockDim, gridDim, counter_ptr):
+    atomicAdd(counter_ptr, 1)
+```
+
+Esses *helpers* utilizam internamente ``GlobalMemory.atomic_*``. Os métodos
+originais continuam acessíveis diretamente através das instâncias de
+``SharedMemory`` e ``GlobalMemory``.
+
 
 ## Monitoramento de Divergência
 
