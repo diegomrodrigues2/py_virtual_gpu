@@ -1,12 +1,20 @@
 from __future__ import annotations
 
 from fastapi import Depends, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from ..virtualgpu import VirtualGPU
 from ..services import GPUManager, get_gpu_manager
 from .routers import gpus as gpus_router
 
 app = FastAPI(title="Py Virtual GPU API")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 app.include_router(gpus_router.router)
 
 
