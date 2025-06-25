@@ -104,3 +104,5 @@ ENV/
 
 # Others
 Thumbs.db
+package-lock.json
+node_modules/
