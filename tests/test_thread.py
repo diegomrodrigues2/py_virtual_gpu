@@ -70,3 +70,21 @@ def test_repr_contains_indices_and_register_count():
     assert "blk=(0,0,0)" in text
     assert "regs=0" in text
 
+
+def test_alloc_local_and_latency():
+    gm = GlobalMemory(16)
+    t = Thread(register_mem_size=4, local_mem_size=8)
+    off1 = t.alloc_local(4)
+    off2 = t.alloc_local(2)
+    assert (off1, off2) == (0, 4)
+    assert t.local_ptr == 6
+    assert t.local_mem.latency_cycles == gm.latency_cycles
+    assert t.local_mem.bandwidth_bpc == gm.bandwidth_bpc
+
+
+def test_alloc_local_overflow():
+    t = Thread(register_mem_size=4, local_mem_size=4)
+    t.alloc_local(4)
+    with pytest.raises(MemoryError):
+        t.alloc_local(1)
+

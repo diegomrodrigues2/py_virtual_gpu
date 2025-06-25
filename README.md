@@ -8,7 +8,7 @@ Simulador em Python de uma arquitetura de GPU para estudos de paralelismo e prog
 - **StreamingMultiprocessor** – executa `ThreadBlock`s e gerencia `Warp`s.
 - **ThreadBlock** – conjunto de threads com `SharedMemory` e barreira de sincronização.
 - **Thread/Warp** – threads são agrupadas em warps que executam em *lock-step*.
-- **Memórias** – `GlobalMemory` compartilhada por todos os blocks e `SharedMemory` restrita a cada block.
+- **Memórias** – `GlobalMemory` compartilhada por todos os blocks, `SharedMemory` restrita a cada block e `LocalMemory` privada por thread para variáveis grandes e spill de registradores.
 
 Um resumo detalhado das classes está em [docs/class_structure.md](docs/class_structure.md). Para uma descrição do fluxo de execução consulte [docs/components_and_execution.md](docs/components_and_execution.md).
 
@@ -36,6 +36,7 @@ O `VirtualGPU` distribui blocks para os SMs, que por sua vez instanciam warps e 
 - Lançamento de kernel via `launch_kernel` com exposicao de `threadIdx` e `blockIdx`.
 - Memoria constante (`64 KiB` por padrao) acessivel por
   `gpu = VirtualGPU.get_current(); gpu.read_constant(...)` ou `thread.const_mem.read(...)`.
+- `Thread.alloc_local(size)` permite reservar bytes em `LocalMemory` para variáveis locais grandes do kernel.
 
 ## Exemplo rapido
 

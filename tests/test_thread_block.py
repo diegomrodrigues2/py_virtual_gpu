@@ -94,3 +94,11 @@ def test_barrier_wait_orders_entries():
     assert len(before_indices) == total_threads
     assert len(after_indices) == total_threads
     assert min(after_indices) > max(before_indices)
+
+
+def test_initialize_threads_custom_register_and_local_size():
+    tb = ThreadBlock((0, 0, 0), (2, 1, 1), (1, 1, 1), shared_mem_size=0)
+    tb.initialize_threads(lambda *a: None, register_mem_size=8, local_mem_size=16)
+    for t in tb.threads:
+        assert t.registers.size == 8
+        assert t.local_mem.size == 16

@@ -106,3 +106,10 @@ Cada spill registra eventos e adiciona ciclos extras calculados a partir de
 ``spill_granularity`` e ``spill_latency_cycles``. As estatísticas podem ser
 obtidas por thread com ``thread.get_spill_stats()`` ou agregadas pela
 ``VirtualGPU.get_memory_stats()``.
+
+## Memória Local por Thread
+
+Variáveis locais que não cabem nos registradores podem ser alocadas na
+``LocalMemory`` de cada thread. O método ``Thread.alloc_local(size)``
+retorna o deslocamento reservado nessa região para ser usado pelo kernel.
+Seu acesso possui a mesma latência e largura de banda da ``GlobalMemory``.
