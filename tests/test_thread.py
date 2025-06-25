@@ -19,7 +19,15 @@ def test_register_file_read_write():
 def test_thread_attributes():
     sm = SharedMemory(16)
     gm = GlobalMemory(32)
-    t = Thread((0, 0, 0), (1, 2, 3), (4, 4, 1), (8, 8, 1), 256, sm, gm)
+    t = Thread(
+        (0, 0, 0),
+        (1, 2, 3),
+        (4, 4, 1),
+        (8, 8, 1),
+        256,
+        shared_mem=sm,
+        global_mem=gm,
+    )
     assert t.thread_idx == (0, 0, 0)
     assert t.block_idx == (1, 2, 3)
     assert t.block_dim == (4, 4, 1)
@@ -31,7 +39,15 @@ def test_thread_attributes():
 def test_run_passes_indices_and_args():
     sm = SharedMemory(1)
     gm = GlobalMemory(1)
-    t = Thread((1, 0, 0), (0, 0, 0), (2, 1, 1), (1, 1, 1), 4, sm, gm)
+    t = Thread(
+        (1, 0, 0),
+        (0, 0, 0),
+        (2, 1, 1),
+        (1, 1, 1),
+        4,
+        shared_mem=sm,
+        global_mem=gm,
+    )
 
     received = {}
 
@@ -64,7 +80,15 @@ def test_run_passes_indices_and_args():
 def test_repr_contains_indices_and_register_count():
     sm = SharedMemory(1)
     gm = GlobalMemory(1)
-    t = Thread((0, 0, 0), (0, 0, 0), (1, 1, 1), (1, 1, 1), 0, sm, gm)
+    t = Thread(
+        (0, 0, 0),
+        (0, 0, 0),
+        (1, 1, 1),
+        (1, 1, 1),
+        0,
+        shared_mem=sm,
+        global_mem=gm,
+    )
     text = repr(t)
     assert "idx=(0,0,0)" in text
     assert "blk=(0,0,0)" in text

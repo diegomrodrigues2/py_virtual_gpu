@@ -37,7 +37,7 @@ def test_dispatch_round_robin(monkeypatch):
 
     counts = {0: 0, 1: 0}
 
-    def _issue(self, inst):
+    def _step(self):
         counts[self.id] += 1
         if self.id == 0 and counts[self.id] == 1:
             self.active_mask[0] = False
@@ -45,7 +45,7 @@ def test_dispatch_round_robin(monkeypatch):
         else:
             self.active_mask = [False] * len(self.active_mask)
 
-    monkeypatch.setattr(Warp, "issue_instruction", _issue)
+    monkeypatch.setattr(Warp, "execute", _step)
     sm.dispatch()
 
     assert counts[0] == 2
