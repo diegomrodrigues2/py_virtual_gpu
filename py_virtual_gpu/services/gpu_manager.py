@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import List
 from dataclasses import asdict
+from datetime import datetime
+from uuid import uuid4
 
 from ..virtualgpu import VirtualGPU
 
@@ -162,12 +164,16 @@ class GPUManager:
                     item = asdict(ev)
                     item["gpu_id"] = gpu_id
                     item["type"] = "kernel"
+                    item["id"] = str(uuid4())
+                    item["timestamp"] = datetime.utcnow().isoformat()
                     events.append(item)
             for ev in gpu.get_transfer_log():
                 if since_cycle is None or ev.start_cycle >= since_cycle:
                     item = asdict(ev)
                     item["gpu_id"] = gpu_id
                     item["type"] = "transfer"
+                    item["id"] = str(uuid4())
+                    item["timestamp"] = datetime.utcnow().isoformat()
                     events.append(item)
             for sm in gpu.sms:
                 for ev in sm.get_divergence_log():
@@ -175,6 +181,8 @@ class GPUManager:
                         item = asdict(ev)
                         item["gpu_id"] = gpu_id
                         item["type"] = "divergence"
+                        item["id"] = str(uuid4())
+                        item["timestamp"] = datetime.utcnow().isoformat()
                         events.append(item)
 
         events.sort(key=lambda e: e.get("start_cycle", 0))
