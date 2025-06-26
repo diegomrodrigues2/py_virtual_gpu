@@ -1,5 +1,15 @@
 import React, { useState } from 'react';
-import { GPUState, SimulatorEvent, GpuSummary, StreamingMultiprocessorState, GlobalMemoryState, TransfersState } from '../types/types';
+import {
+  GPUState,
+  SimulatorEvent,
+  GpuSummary,
+  StreamingMultiprocessorState,
+  GlobalMemoryState,
+  TransfersState,
+  SMDetailed,
+} from '../types/types';
+import { fetchSmDetail } from '../services/gpuSimulatorService';
+import { SmDetailView } from './SmDetailView';
 
 // --- Icons ---
 export const IconChip: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
@@ -142,8 +152,8 @@ export const MemoryUsageDisplay: React.FC<MemoryUsageDisplayProps> = ({ used, to
 };
 
 // --- SmCard ---
-interface SmCardProps { sm: StreamingMultiprocessorState; }
-export const SmCard: React.FC<SmCardProps> = ({ sm }) => {
+interface SmCardProps { sm: StreamingMultiprocessorState; gpuId: string; }
+export const SmCard: React.FC<SmCardProps> = ({ sm, gpuId }) => {
   const statusColors: Record<StreamingMultiprocessorState['status'], string> = {
     running: 'bg-green-500',
     idle: 'bg-gray-500',
@@ -151,6 +161,24 @@ export const SmCard: React.FC<SmCardProps> = ({ sm }) => {
     error: 'bg-red-500',
   };
   const loadPercentage = sm.load_percentage || 0;
+  const [detail, setDetail] = useState<SMDetailed | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const toggleDetail = async () => {
+    if (detail) {
+      setDetail(null);
+      return;
+    }
+    setLoading(true);
+    try {
+      const d = await fetchSmDetail(gpuId, String(sm.id));
+      setDetail(d);
+    } catch (err) {
+      console.error('Failed to fetch SM detail', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="bg-gray-800 p-4 rounded-lg shadow-lg hover:shadow-sky-500/30 transition-shadow duration-300">
@@ -183,6 +211,15 @@ export const SmCard: React.FC<SmCardProps> = ({ sm }) => {
         )}
         {sm.active_block_idx && <StatDisplay label="Active Block" value={sm.active_block_idx} className="col-span-2"/>}
       </div>
+
+      <button
+        onClick={toggleDetail}
+        className="mt-3 px-3 py-1 bg-sky-600 hover:bg-sky-500 rounded text-xs"
+      >
+        {detail ? 'Hide Details' : 'View Details'}
+      </button>
+      {loading && <p className="text-xs text-gray-400 mt-1">Loading...</p>}
+      {detail && <SmDetailView sm={detail} />}
     </div>
   );
 };
