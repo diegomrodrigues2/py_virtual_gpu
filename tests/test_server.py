@@ -25,3 +25,35 @@ def test_start_background_api():
     finally:
         stop()
         assert not thread.is_alive()
+
+
+def test_start_background_api_suppresses_access_logs(monkeypatch):
+    """When running in a notebook, access logs should be disabled."""
+
+    captured_access_log = {}
+
+    class DummyConfig:
+        def __init__(self, *args, **kwargs):
+            captured_access_log['value'] = kwargs.get('access_log')
+            self.access_log = kwargs.get('access_log')
+
+    class DummyServer:
+        def __init__(self, config):
+            self.config = config
+            self.should_exit = False
+
+        def run(self):
+            return
+
+    monkeypatch.setitem(sys.modules, 'ipykernel', object())
+    monkeypatch.setattr(start_background_api.__globals__['uvicorn'], 'Config', DummyConfig)
+    monkeypatch.setattr(start_background_api.__globals__['uvicorn'], 'Server', DummyServer)
+
+    thread, stop = start_background_api(port=8002)
+    try:
+        stop()
+        thread.join(timeout=1)
+    finally:
+        monkeypatch.setitem(sys.modules, 'ipykernel', None)
+
+    assert captured_access_log.get('value') is False
