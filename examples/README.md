@@ -13,3 +13,31 @@ python examples/convolution_2d.py
 
 Each program allocates memory on the virtual device, launches a kernel and prints
 whether the result computed on the device matches the host computation.
+
+### Visualizing via API and UI
+
+Both examples accept the ``--api`` flag to start the FastAPI server while they
+run. When the server is active you can launch the dashboard UI from the
+``app`` directory:
+
+```bash
+cd app && npm install && npm run dev
+```
+
+Then run an example with API support enabled:
+
+```bash
+python examples/vector_mul.py --api
+```
+
+Open ``http://localhost:5173`` to inspect the execution step by step through the
+UI. When the script finishes the API server shuts down automatically.
+
+If you want to double check the data the UI is receiving you can hit the API
+directly while an example is running:
+
+```bash
+curl http://localhost:8000/gpus
+curl http://localhost:8000/gpus/0/state
+curl http://localhost:8000/events
+```

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import sys
 import threading
+import time
 from typing import Callable, Tuple
 
 import uvicorn
@@ -41,6 +42,9 @@ def start_background_api(host: str = "127.0.0.1", port: int = 8000) -> Tuple[thr
 
     thread = threading.Thread(target=server.run, daemon=True)
     thread.start()
+
+    while not getattr(server, "started", True):
+        time.sleep(0.05)
 
     def stop() -> None:
         server.should_exit = True
