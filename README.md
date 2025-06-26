@@ -96,6 +96,7 @@ make dev-api
 
 
 A documentação Swagger estará disponível em http://localhost:8000/docs.
+Por padrão a aplicação inicializa duas GPUs com quatro SMs cada.
 
 ## Using with Jupyter/REPL
 

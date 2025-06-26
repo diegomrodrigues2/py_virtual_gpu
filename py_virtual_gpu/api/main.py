@@ -16,7 +16,8 @@ async def lifespan(app: FastAPI):
 
     manager = get_gpu_manager()
     if not manager.list_gpus():
-        manager.add_gpu(VirtualGPU(num_sms=1, global_mem_size=1024))
+        for _ in range(2):
+            manager.add_gpu(VirtualGPU(num_sms=4, global_mem_size=1024))
     yield
 
 
