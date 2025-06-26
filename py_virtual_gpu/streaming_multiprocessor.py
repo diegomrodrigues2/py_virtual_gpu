@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from multiprocessing import Queue
-from queue import Queue as LocalQueue
+from queue import Queue
 from typing import List, Dict, Optional, TYPE_CHECKING
 from dataclasses import dataclass
 
@@ -43,7 +42,7 @@ class StreamingMultiprocessor:
         """Initialize the SM with configuration parameters."""
         self.id: int = id
         self.block_queue: Queue = Queue()
-        self.warp_queue: LocalQueue = LocalQueue()
+        self.warp_queue: Queue = Queue()
         self.shared_mem: SharedMemory = SharedMemory(shared_mem_size)
         self.max_registers_per_thread: int = max_registers_per_thread
         self.warp_size: int = warp_size
@@ -185,7 +184,7 @@ class StreamingMultiprocessor:
     def reset(self) -> None:
         """Clear the queue and reset counters."""
         self.block_queue = Queue()
-        self.warp_queue = LocalQueue()
+        self.warp_queue = Queue()
         for key in self.counters:
             self.counters[key] = 0
         for key in self.stats:

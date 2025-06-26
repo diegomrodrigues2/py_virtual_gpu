@@ -128,19 +128,15 @@ class GPUManager:
             raise IndexError("Invalid SM id")
         sm = gpu.sms[sm_id]
 
-        try:
-            pending_blocks = list(sm.block_queue.queue)
-        except AttributeError:  # multiprocessing.Queue may not expose 'queue'
-            pending_blocks = []
+        # ``StreamingMultiprocessor.block_queue`` is a ``queue.Queue`` and
+        # exposes the underlying ``queue`` attribute for inspection.
+        pending_blocks = list(sm.block_queue.queue)
 
         blocks: list[BlockSummary] = []
         for tb in pending_blocks:
             blocks.append(BlockSummary(block_idx=tb.block_idx, status="pending"))
 
-        try:
-            queued_warps = list(sm.warp_queue.queue)
-        except AttributeError:
-            queued_warps = []
+        queued_warps = list(sm.warp_queue.queue)
 
         warps: list[WarpSummary] = []
         for warp in queued_warps:
