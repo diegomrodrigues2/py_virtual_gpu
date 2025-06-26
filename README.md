@@ -98,6 +98,39 @@ make dev-api
 A documentação Swagger estará disponível em http://localhost:8000/docs.
 Por padrão a aplicação inicializa duas GPUs com quatro SMs cada.
 
+## Running the Examples
+
+Example programs are located in [`examples/`](examples). They can be executed
+directly and optionally started with the API so that the dashboard UI reflects
+their progress.
+
+```bash
+# plain execution
+python examples/vector_mul.py
+
+# start with API support to visualize in the UI
+python examples/vector_mul.py --api
+```
+
+When ``--api`` is used the script launches the FastAPI server in the background
+and registers the created GPU with the global manager. You can then run the UI
+from the `app` directory to inspect the execution:
+
+```bash
+cd app && npm install && npm run dev
+```
+
+The dashboard makes periodic requests to `/gpus` to list available devices,
+`/gpus/<id>/state` for detailed metrics and `/events` for the event log. If you
+want to confirm the API is responding during an example run you can query these
+endpoints manually using `curl`:
+
+```bash
+curl http://localhost:8000/gpus
+curl http://localhost:8000/gpus/0/state
+curl http://localhost:8000/events
+```
+
 ## Using with Jupyter/REPL
 
 To expose the API while working interactively start it in a background thread:

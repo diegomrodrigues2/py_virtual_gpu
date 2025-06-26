@@ -4,6 +4,8 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from py_virtual_gpu import VirtualGPU
+from py_virtual_gpu.services import get_gpu_manager
+from py_virtual_gpu.api.server import start_background_api
 from py_virtual_gpu.thread_block import ThreadBlock
 
 
@@ -49,9 +51,15 @@ def host_convolution(inp, kernel):
     return out
 
 
-def main() -> None:
+def main(with_api: bool = False) -> None:
+    if with_api:
+        api_thread, stop_api = start_background_api()
+    else:
+        api_thread = stop_api = None
+
     width = height = 4
     gpu = VirtualGPU(num_sms=0, global_mem_size=256)
+    get_gpu_manager().add_gpu(gpu)
     VirtualGPU.set_current(gpu)
 
     input_matrix = [
@@ -93,6 +101,14 @@ def main() -> None:
     else:
         print("Mismatch detected")
 
+    if stop_api:
+        stop_api()
+
 
 if __name__ == "__main__":
-    main()
+    import argparse
+
+    parser = argparse.ArgumentParser(description="2D convolution example")
+    parser.add_argument("--api", action="store_true", help="start API server while running")
+    args = parser.parse_args()
+    main(with_api=args.api)
