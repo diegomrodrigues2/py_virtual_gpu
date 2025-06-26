@@ -1,4 +1,4 @@
-import { GPUState, SimulatorEvent, GpuSummary, BackendData, StreamingMultiprocessorState, GPUConfig, TransfersState } from '../types/types';
+import { GPUState, SimulatorEvent, GpuSummary, BackendData, StreamingMultiprocessorState, GPUConfig, TransfersState, SMDetailed } from '../types/types';
 
 const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:8000';
 
@@ -68,6 +68,20 @@ export const fetchGpuState = async (id: string): Promise<GPUState> => {
             (sms.filter((s) => s.status !== 'idle').length / sms.length) * 100,
           )
         : 0,
+  };
+};
+
+export const fetchSmDetail = async (
+  gpuId: string,
+  smId: string,
+): Promise<SMDetailed> => {
+  const detail = await fetchJSON<any>(`${API_BASE}/gpus/${gpuId}/sm/${smId}`);
+  return {
+    id: detail.id,
+    blocks: detail.blocks ?? [],
+    warps: detail.warps ?? [],
+    divergence_log: detail.divergence_log ?? [],
+    counters: detail.counters ?? {},
   };
 };
 

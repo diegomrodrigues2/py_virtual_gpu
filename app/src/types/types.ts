@@ -38,6 +38,31 @@ export interface StreamingMultiprocessorState {
   active_warps?: { id: number; active_threads: number; total_threads: number; pc?: number; status?: string }[];
 }
 
+export interface BlockSummary {
+  block_idx: [number, number, number];
+  status: string;
+}
+
+export interface WarpSummary {
+  id: number;
+  active_threads: number;
+}
+
+export interface DivergenceRecord {
+  warp_id: number;
+  pc: number;
+  mask_before: boolean[];
+  mask_after: boolean[];
+}
+
+export interface SMDetailed {
+  id: number;
+  blocks: BlockSummary[];
+  warps: WarpSummary[];
+  divergence_log: DivergenceRecord[];
+  counters: Record<string, number>;
+}
+
 export interface GPUState {
   id: string; 
   name: string; // e.g., "Simulated GPU Alpha"

@@ -161,7 +161,7 @@ export const GpuDetailView: React.FC<{ gpu: GPUState }> = ({ gpu }) => (
       {gpu.sms.length === 0 && <p className="text-gray-400 bg-gray-800 p-4 rounded-lg">No SMs configured or active for this GPU.</p>}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {gpu.sms.map(sm => (
-          <SmCard key={sm.id} sm={sm} />
+          <SmCard key={sm.id} sm={sm} gpuId={gpu.id} />
         ))}
       </div>
     </div>
