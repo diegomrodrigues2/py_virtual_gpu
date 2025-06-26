@@ -11,11 +11,12 @@ from py_virtual_gpu.virtualgpu import VirtualGPU
 
 
 def test_startup_registers_gpu():
+    manager = get_gpu_manager()
+    manager._gpus.clear()
     with TestClient(app):  # triggers startup event
-        manager = get_gpu_manager()
         gpus = manager.list_gpus()
-        assert len(gpus) >= 1
-        assert isinstance(manager.get_gpu(0), VirtualGPU)
+        assert len(gpus) == 2
+        assert all(len(g.sms) == 4 for g in gpus)
 
 
 def test_gpu_manager_add_and_get():

@@ -14,7 +14,7 @@ def test_status_endpoint():
         resp = client.get("/status")
         assert resp.status_code == 200
         data = resp.json()
-        assert data["num_sms"] == 1
+        assert data["num_sms"] == 4
         assert data["global_mem_size"] == 1024
         assert data["shared_mem_size"] == 0
 
