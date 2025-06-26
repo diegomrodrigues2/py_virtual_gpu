@@ -67,7 +67,21 @@ class StreamingMultiprocessor:
             self.execute_block(block)
 
     def execute_block(self, block: ThreadBlock) -> None:
-        """Split the block into warps and execute them."""
+        """Execute ``block`` either directly or via warp scheduling."""
+
+        # ``ThreadBlock`` instances created by :class:`VirtualGPU` store the
+        # kernel function and its arguments. When present we run the block
+        # directly using Python threads which prevents the unfinished ``Warp``
+        # logic from looping indefinitely.
+        if hasattr(block, "kernel_func"):
+            func = getattr(block, "kernel_func")
+            args = getattr(block, "kernel_args", tuple())
+            block.execute(func, *args)
+            num_warps = (len(block.threads) + self.warp_size - 1) // self.warp_size
+            self.counters["warps_executed"] += num_warps
+            return
+
+        # Fallback for tests or custom blocks that do not define a kernel.
         warps: List[Warp] = []
         threads = block.threads
         for idx in range(0, len(threads), self.warp_size):
