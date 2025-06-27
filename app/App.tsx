@@ -1,15 +1,15 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { GPUState, SimulatorEvent, GpuSummary, BackendData, MemorySlice } from './types/types';
+import { GPUState, SimulatorEvent, GpuSummary, BackendData, MemorySlice } from './types';
 import {
   fetchBackendData,
   fetchGpuState,
   fetchGlobalMemorySlice,
   fetchConstantMemorySlice,
 } from './gpuSimulatorService';
-import { IconChip, IconMemory, IconActivity, IconInfo, IconChevronDown, IconChevronUp, Tooltip, MemoryUsageDisplay, SmCard, GpuOverviewCard, TransfersDisplay, EventLog, IconGpu, IconLink, StatDisplay } from './components/components';
-import { MemoryViewer } from './components/MemoryViewer';
-import { KernelLogView } from './components/KernelLogView';
+import { IconChip, IconMemory, IconActivity, IconInfo, IconChevronDown, IconChevronUp, Tooltip, MemoryUsageDisplay, SmCard, GpuOverviewCard, TransfersDisplay, EventLog, IconGpu, IconLink, StatDisplay } from './components';
+import { MemoryViewer } from './MemoryViewer';
+import { KernelLogView } from './KernelLogView';
 
 
 interface DashboardLayoutProps {
@@ -267,7 +267,7 @@ const App: React.FC = () => {
       setBackendData(data);
 
       if (data.gpuStates.length > 0) {
-        if (!selectedGpuId || !data.gpuStates.find(g => g.id === selectedGpuId)) {
+        if (!selectedGpuId || !data.gpuStates.find((g: GPUState) => g.id === selectedGpuId)) {
           setSelectedGpuId(data.gpuStates[0].id);
         }
         if (data.gpuStates.length === 1 && currentView === 'cluster' && selectedGpuId === null) {

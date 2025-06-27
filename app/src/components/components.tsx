@@ -171,10 +171,14 @@ export const SmCard: React.FC<SmCardProps> = ({ sm, gpuId }) => {
     }
     setLoading(true);
     try {
+      console.log(`Fetching SM detail for GPU ${gpuId}, SM ${sm.id}`);
       const d = await fetchSmDetail(gpuId, String(sm.id));
+      console.log('SM detail received:', d);
       setDetail(d);
     } catch (err) {
-      console.error('Failed to fetch SM detail', err);
+      console.error('Failed to fetch SM detail:', err);
+      // Show error in UI
+      alert(`Failed to fetch SM details: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
@@ -214,12 +218,16 @@ export const SmCard: React.FC<SmCardProps> = ({ sm, gpuId }) => {
 
       <button
         onClick={toggleDetail}
-        className="mt-3 px-3 py-1 bg-sky-600 hover:bg-sky-500 rounded text-xs"
+        className="mt-3 w-full px-3 py-2 bg-sky-600 hover:bg-sky-500 rounded text-sm font-medium transition-colors"
+        disabled={loading}
       >
-        {detail ? 'Hide Details' : 'View Details'}
+        {loading ? 'Loading...' : detail ? 'Hide Details' : 'View Details'}
       </button>
-      {loading && <p className="text-xs text-gray-400 mt-1">Loading...</p>}
-      {detail && <SmDetailView sm={detail} />}
+      {detail && (
+        <div className="mt-3 p-3 bg-gray-700 rounded-lg border-l-4 border-sky-500">
+          <SmDetailView sm={detail} />
+        </div>
+      )}
     </div>
   );
 };
