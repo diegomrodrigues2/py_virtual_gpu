@@ -20,12 +20,6 @@ export interface TransfersState {
   cycles_transferred?: number; 
 }
 
-export interface MemorySlice {
-  offset: number;
-  size: number;
-  data: string; // hex-encoded
-}
-
 export interface StreamingMultiprocessorState {
   id: number;
   blocks_active: number;
@@ -42,6 +36,44 @@ export interface StreamingMultiprocessorState {
   status: 'running' | 'idle' | 'waiting' | 'error';
   load_percentage?: number; // 0-100
   active_warps?: { id: number; active_threads: number; total_threads: number; pc?: number; status?: string }[];
+}
+
+export interface BlockSummary {
+  block_idx: [number, number, number];
+  status: string;
+}
+
+export interface WarpSummary {
+  id: number;
+  active_threads: number;
+}
+
+export interface DivergenceRecord {
+  warp_id: number;
+  pc: number;
+  mask_before: boolean[];
+  mask_after: boolean[];
+}
+
+export interface KernelLaunchRecord {
+  name: string;
+  grid_dim: [number, number, number];
+  block_dim: [number, number, number];
+  start_cycle: number;
+}
+
+export interface MemorySlice {
+  offset: number;
+  size: number;
+  data: string; // hex-encoded
+}
+
+export interface SMDetailed {
+  id: number;
+  blocks: BlockSummary[];
+  warps: WarpSummary[];
+  divergence_log: DivergenceRecord[];
+  counters: Record<string, number>;
 }
 
 export interface GPUState {

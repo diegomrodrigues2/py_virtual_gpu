@@ -124,6 +124,9 @@ describe('GpuDetailView', () => {
 
     expect(mockFetchConstantSlice).toHaveBeenCalledWith('0', 4, 1);
     expect(await screen.findByText('41')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: /clear/i }));
+    expect(screen.queryByText('41')).not.toBeInTheDocument();
   });
 });
 

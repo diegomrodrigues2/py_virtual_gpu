@@ -206,9 +206,17 @@ export const GpuDetailView: React.FC<{ gpu: GPUState }> = ({ gpu }) => {
                 className="bg-gray-700 p-1 rounded w-20 text-sm"
                 placeholder="Size"
               />
-              <button onClick={fetchSlice} className="px-2 py-1 bg-sky-600 rounded text-xs">
+              <button onClick={fetchSlice} className="px-2 py-1 bg-sky-600 rounded text-xs mr-2">
                 Fetch
               </button>
+              {slice && (
+                <button
+                  onClick={() => setSlice(null)}
+                  className="px-2 py-1 bg-gray-700 rounded text-xs"
+                >
+                  Clear
+                </button>
+              )}
             </div>
             {loading && <p className="text-xs text-gray-400">Loading...</p>}
             {slice && <MemoryViewer slice={slice} />}
