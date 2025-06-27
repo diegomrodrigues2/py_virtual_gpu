@@ -1,8 +1,9 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { GPUState, SimulatorEvent, GpuSummary, BackendData } from './types/types';
-import { fetchBackendData, fetchGpuState } from './services/gpuSimulatorService';
+import { GPUState, SimulatorEvent, GpuSummary, BackendData, MemorySlice } from './types/types';
+import { fetchBackendData, fetchGpuState, fetchGlobalMemorySlice, fetchConstantMemorySlice } from './services/gpuSimulatorService';
 import { IconChip, IconMemory, IconActivity, IconInfo, IconChevronDown, IconChevronUp, Tooltip, MemoryUsageDisplay, SmCard, GpuOverviewCard, TransfersDisplay, EventLog, IconGpu, IconLink, StatDisplay } from './components/components';
+import { MemoryViewer } from './components/MemoryViewer';
 
 
 interface DashboardLayoutProps {
@@ -134,39 +135,97 @@ const GpuClusterView: React.FC<{summaries: GpuSummary[], onSelectGpu: (id: strin
 );
 
 
-export const GpuDetailView: React.FC<{ gpu: GPUState }> = ({ gpu }) => (
-  <div className="space-y-6">
-    <div className="bg-gray-800 p-6 rounded-lg shadow-xl">
-        <div className="flex flex-col md:flex-row justify-between md:items-center mb-6">
-            <h2 className="text-3xl font-bold text-sky-400 flex items-center">
-                <IconGpu className="w-8 h-8 mr-3 text-sky-500" /> {gpu.name} ({gpu.id}) - Details
-            </h2>
-            <div className="flex space-x-4 mt-3 md:mt-0">
-                <StatDisplay label="Overall Load" value={`${gpu.overall_load}%`} />
-                {gpu.temperature !== undefined && <StatDisplay label="Temp" value={`${gpu.temperature}°C`} />}
-                {gpu.power_draw_watts !== undefined && <StatDisplay label="Power" value={`${gpu.power_draw_watts}W`} />}
-            </div>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <MemoryUsageDisplay used={gpu.global_memory.used} total={gpu.global_memory.total} label="Global Memory" />
-            <TransfersDisplay transfers={gpu.transfers}/>
-        </div>
-    </div>
+export const GpuDetailView: React.FC<{ gpu: GPUState }> = ({ gpu }) => {
+  const [offset, setOffset] = useState(0);
+  const [size, setSize] = useState(64);
+  const [memType, setMemType] = useState<'global' | 'constant'>('global');
+  const [slice, setSlice] = useState<MemorySlice | null>(null);
+  const [loading, setLoading] = useState(false);
 
-    <div>
-      <h3 className="text-2xl font-semibold text-sky-400 mb-4 ml-1 flex items-center">
-        <IconChip className="w-7 h-7 mr-2 text-sky-500" /> Streaming Multiprocessors ({gpu.config.num_sms})
-      </h3>
-      {gpu.sms.length === 0 && <p className="text-gray-400 bg-gray-800 p-4 rounded-lg">No SMs configured or active for this GPU.</p>}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {gpu.sms.map(sm => (
-          <SmCard key={sm.id} sm={sm} gpuId={gpu.id} />
-        ))}
+  const fetchSlice = async () => {
+    setLoading(true);
+    try {
+      const s =
+        memType === 'global'
+          ? await fetchGlobalMemorySlice(gpu.id, offset, size)
+          : await fetchConstantMemorySlice(gpu.id, offset, size);
+      setSlice(s);
+    } catch (err) {
+      console.error('Failed to fetch memory slice', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-gray-800 p-6 rounded-lg shadow-xl">
+          <div className="flex flex-col md:flex-row justify-between md:items-center mb-6">
+              <h2 className="text-3xl font-bold text-sky-400 flex items-center">
+                  <IconGpu className="w-8 h-8 mr-3 text-sky-500" /> {gpu.name} ({gpu.id}) - Details
+              </h2>
+              <div className="flex space-x-4 mt-3 md:mt-0">
+                  <StatDisplay label="Overall Load" value={`${gpu.overall_load}%`} />
+                  {gpu.temperature !== undefined && <StatDisplay label="Temp" value={`${gpu.temperature}°C`} />}
+                  {gpu.power_draw_watts !== undefined && <StatDisplay label="Power" value={`${gpu.power_draw_watts}W`} />}
+              </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <MemoryUsageDisplay used={gpu.global_memory.used} total={gpu.global_memory.total} label="Global Memory" />
+              <TransfersDisplay transfers={gpu.transfers}/>
+          </div>
+
+          <div className="mt-4">
+            <h3 className="text-lg font-semibold text-sky-400 mb-2 flex items-center">
+              <IconMemory className="w-5 h-5 mr-2" /> Memory Inspector
+            </h3>
+            <div className="flex items-center space-x-2 mb-2">
+              <select
+                value={memType}
+                onChange={(e) => setMemType(e.target.value as 'global' | 'constant')}
+                className="bg-gray-700 p-1 rounded text-sm"
+              >
+                <option value="global">Global</option>
+                <option value="constant">Constant</option>
+              </select>
+              <input
+                type="number"
+                value={offset}
+                onChange={(e) => setOffset(Number(e.target.value))}
+                className="bg-gray-700 p-1 rounded w-24 text-sm"
+                placeholder="Offset"
+              />
+              <input
+                type="number"
+                value={size}
+                onChange={(e) => setSize(Number(e.target.value))}
+                className="bg-gray-700 p-1 rounded w-20 text-sm"
+                placeholder="Size"
+              />
+              <button onClick={fetchSlice} className="px-2 py-1 bg-sky-600 rounded text-xs">
+                Fetch
+              </button>
+            </div>
+            {loading && <p className="text-xs text-gray-400">Loading...</p>}
+            {slice && <MemoryViewer slice={slice} />}
+          </div>
+      </div>
+
+      <div>
+        <h3 className="text-2xl font-semibold text-sky-400 mb-4 ml-1 flex items-center">
+          <IconChip className="w-7 h-7 mr-2 text-sky-500" /> Streaming Multiprocessors ({gpu.config.num_sms})
+        </h3>
+        {gpu.sms.length === 0 && <p className="text-gray-400 bg-gray-800 p-4 rounded-lg">No SMs configured or active for this GPU.</p>}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {gpu.sms.map(sm => (
+            <SmCard key={sm.id} sm={sm} gpuId={gpu.id} />
+          ))}
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 
 const App: React.FC = () => {

@@ -55,6 +55,12 @@ export interface DivergenceRecord {
   mask_after: boolean[];
 }
 
+export interface MemorySlice {
+  offset: number;
+  size: number;
+  data: string; // hex-encoded
+}
+
 export interface SMDetailed {
   id: number;
   blocks: BlockSummary[];
