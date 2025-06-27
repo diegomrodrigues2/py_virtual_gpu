@@ -119,6 +119,12 @@ from the `app` directory to inspect the execution:
 ```bash
 cd app && npm install && npm run dev
 ```
+Node.js and npm must be installed for the dashboard to run. The helper
+``start_background_dashboard`` will raise an error if ``npm`` is not found on
+your ``PATH``. On Windows the helper automatically launches ``npm.cmd`` via
+``cmd.exe`` so the dashboard works the same way as on Unix systems. The helper
+also sets ``VITE_API_BASE_URL`` so the React app talks to the API port you
+specified and chooses a free UI port if necessary.
 
 The dashboard makes periodic requests to `/gpus` to list available devices,
 `/gpus/<id>/state` for detailed metrics, `/gpus/<id>/kernel_log` for the kernel launch history and `/events` for the consolidated event feed. If you

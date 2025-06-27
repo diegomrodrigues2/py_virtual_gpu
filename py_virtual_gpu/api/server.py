@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import sys
+import os
 import threading
 import time
 from typing import Callable, Tuple
 import subprocess
 from pathlib import Path
+import shutil
 
 import uvicorn
 
@@ -87,11 +89,30 @@ def start_background_dashboard(
     else:
         app_dir = Path(app_dir)
 
-    ui_proc = subprocess.Popen([
-        "npm",
-        "run",
-        "dev",
-    ], cwd=app_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    npm_cmd = shutil.which("npm")
+    if npm_cmd is None:
+        raise RuntimeError(
+            "npm executable not found. Please install Node.js and npm to run the dashboard."
+        )
+
+    ui_port = 5173
+    if ui_port == port:
+        ui_port += 1
+
+    cmd = [npm_cmd, "run", "dev", "--", "--port", str(ui_port)]
+    if os.name == "nt" and npm_cmd.lower().endswith(".cmd"):
+        cmd = ["cmd.exe", "/c"] + cmd
+
+    env = os.environ.copy()
+    env["VITE_API_BASE_URL"] = f"http://{host}:{port}"
+
+    ui_proc = subprocess.Popen(
+        cmd,
+        cwd=app_dir,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=env,
+    )
 
     def stop() -> None:
         stop_api()
