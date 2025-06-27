@@ -29,5 +29,15 @@ export const SmDetailView: React.FC<{ sm: SMDetailed }> = ({ sm }) => (
         </ul>
       )}
     </div>
+    {sm.block_event_log && sm.block_event_log.length > 0 && (
+      <div className="mt-2">
+        <h5 className="font-semibold text-sky-300">Block Events</h5>
+        <ul className="list-disc list-inside text-xs">
+          {sm.block_event_log.map((ev, idx) => (
+            <li key={idx}>Block [{ev.block_idx.join(', ')}] {ev.phase} at cycle {ev.start_cycle}</li>
+          ))}
+        </ul>
+      </div>
+    )}
   </div>
 );

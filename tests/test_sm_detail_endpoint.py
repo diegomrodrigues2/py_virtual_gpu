@@ -40,3 +40,4 @@ def test_sm_detail_divergence_log_size():
         assert resp.status_code == 200
         data = resp.json()
         assert data["counters"]["warp_divergences"] == len(data["divergence_log"])
+        assert "block_event_log" in data

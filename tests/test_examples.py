@@ -28,3 +28,10 @@ def test_convolution_example(capsys):
     mod.main()
     kernel, host = _parse_results(capsys.readouterr().out)
     assert kernel == host
+
+
+def test_matrix_mul_example(capsys):
+    mod = importlib.import_module("examples.matrix_mul")
+    mod.main()
+    kernel, host = _parse_results(capsys.readouterr().out)
+    assert kernel == host

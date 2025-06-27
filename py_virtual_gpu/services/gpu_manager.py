@@ -123,7 +123,13 @@ class GPUManager:
     def get_sm_detail(self, gpu_id: int, sm_id: int, max_events: int = 100):
         """Return detailed information for ``sm_id`` of GPU ``gpu_id``."""
 
-        from ..api.schemas import SMDetailed, BlockSummary, WarpSummary, DivergenceRecord
+        from ..api.schemas import (
+            SMDetailed,
+            BlockSummary,
+            WarpSummary,
+            DivergenceRecord,
+            BlockEventRecord,
+        )
 
         gpu = self.get_gpu(gpu_id)
         if sm_id < 0 or sm_id >= len(gpu.sms):
@@ -145,6 +151,7 @@ class GPUManager:
             warps.append(WarpSummary(id=warp.id, active_threads=sum(warp.active_mask)))
 
         log = [DivergenceRecord(**asdict(ev)) for ev in sm.divergence_log[-max_events:]]
+        block_log = [BlockEventRecord(**asdict(ev)) for ev in sm.block_log[-max_events:]]
 
         return SMDetailed(
             id=sm.id,
@@ -152,6 +159,7 @@ class GPUManager:
             warps=warps,
             divergence_log=log,
             counters=sm.counters.copy(),
+            block_event_log=block_log,
         )
 
     def get_global_memory_slice(self, id: int, offset: int, size: int) -> bytes:
@@ -201,6 +209,14 @@ class GPUManager:
                         item = asdict(ev)
                         item["gpu_id"] = gpu_id
                         item["type"] = "divergence"
+                        item["id"] = str(uuid4())
+                        item["timestamp"] = datetime.utcnow().isoformat()
+                        events.append(item)
+                for ev in sm.get_block_event_log():
+                    if since_cycle is None or ev.start_cycle >= since_cycle:
+                        item = asdict(ev)
+                        item["gpu_id"] = gpu_id
+                        item["type"] = f"BLOCK_{ev.phase.upper()}"
                         item["id"] = str(uuid4())
                         item["timestamp"] = datetime.utcnow().isoformat()
                         events.append(item)

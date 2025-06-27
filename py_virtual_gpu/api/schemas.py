@@ -103,6 +103,15 @@ class DivergenceRecord(BaseModel):
     mask_after: list[bool]
 
 
+class BlockEventRecord(BaseModel):
+    """Serialized record of a thread block event."""
+
+    block_idx: tuple[int, int, int]
+    sm_id: int
+    phase: str
+    start_cycle: int
+
+
 class SMDetailed(BaseModel):
     """Detailed information for a single StreamingMultiprocessor."""
 
@@ -111,6 +120,7 @@ class SMDetailed(BaseModel):
     warps: list[WarpSummary]
     divergence_log: list[DivergenceRecord]
     counters: dict[str, int]
+    block_event_log: list[BlockEventRecord]
 
 
 class MemorySlice(BaseModel):

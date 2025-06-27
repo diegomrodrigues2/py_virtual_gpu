@@ -93,6 +93,7 @@ export const fetchSmDetail = async (
     warps: detail.warps ?? [],
     divergence_log: detail.divergence_log ?? [],
     counters: detail.counters ?? {},
+    block_event_log: detail.block_event_log ?? [],
   };
 };
 

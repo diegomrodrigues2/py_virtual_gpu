@@ -9,6 +9,7 @@ Execute the scripts directly with Python:
 ```bash
 python examples/vector_mul.py
 python examples/convolution_2d.py
+python examples/matrix_mul.py
 ```
 
 Each program allocates memory on the virtual device, launches a kernel and prints
@@ -16,7 +17,7 @@ whether the result computed on the device matches the host computation.
 
 ### Visualizing via API and UI
 
-Both examples accept the ``--api`` flag to start the FastAPI server while they
+All examples accept the ``--api`` flag to start the FastAPI server while they
 run. When the server is active you can launch the dashboard UI from the
 ``app`` directory:
 
@@ -28,6 +29,7 @@ Then run an example with API support enabled:
 
 ```bash
 python examples/vector_mul.py --api
+python examples/matrix_mul.py --api
 ```
 
 Open ``http://localhost:5173`` to inspect the execution step by step through the
