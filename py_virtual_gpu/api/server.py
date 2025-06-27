@@ -4,6 +4,8 @@ import sys
 import threading
 import time
 from typing import Callable, Tuple
+import subprocess
+from pathlib import Path
 
 import uvicorn
 
@@ -51,3 +53,52 @@ def start_background_api(host: str = "127.0.0.1", port: int = 8000) -> Tuple[thr
         thread.join()
 
     return thread, stop
+
+
+def start_background_dashboard(
+    host: str = "127.0.0.1",
+    port: int = 8000,
+    app_dir: str | None = None,
+) -> tuple[threading.Thread, subprocess.Popen, Callable[[], None]]:
+    """Start the API and React dashboard in the background.
+
+    Parameters
+    ----------
+    host: str
+        Interface to bind the API server to.
+    port: int
+        Port number for the API server.
+    app_dir: str, optional
+        Path to the React application directory. If not given, the ``app``
+        directory at the repository root is used.
+
+    Returns
+    -------
+    tuple
+        ``(api_thread, ui_proc, stop_fn)`` where ``api_thread`` is the running
+        API server thread, ``ui_proc`` the ``Popen`` process for ``npm run dev``
+        and ``stop_fn`` stops both components.
+    """
+
+    api_thread, stop_api = start_background_api(host=host, port=port)
+
+    if app_dir is None:
+        app_dir = Path(__file__).resolve().parents[2] / "app"
+    else:
+        app_dir = Path(app_dir)
+
+    ui_proc = subprocess.Popen([
+        "npm",
+        "run",
+        "dev",
+    ], cwd=app_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    def stop() -> None:
+        stop_api()
+        ui_proc.terminate()
+        try:
+            ui_proc.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            ui_proc.kill()
+
+    return api_thread, ui_proc, stop

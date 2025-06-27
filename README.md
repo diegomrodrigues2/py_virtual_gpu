@@ -140,14 +140,16 @@ button to toggle a table listing all recorded kernel launches.
 To expose the API while working interactively start it in a background thread:
 
 ```python
-from py_virtual_gpu.api.server import start_background_api
+from py_virtual_gpu.api.server import start_background_api, start_background_dashboard
 
-thread, stop = start_background_api(port=8001)
-# ... interact with the API ...
+api_thread, ui_proc, stop = start_background_dashboard(port=8001)
+# ... interact with the API/UI ...
 stop()
 ```
-
-This is helpful when running notebooks or experimenting in the Python REPL.
+This is helpful when running notebooks or experimenting in the Python REPL. The
+``start_background_dashboard`` helper launches both the FastAPI server and the
+React dashboard with a single call. If you only need the API server use
+``start_background_api`` instead.
 
 ## Setup de desenvolvimento
 
