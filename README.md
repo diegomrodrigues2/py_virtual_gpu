@@ -108,10 +108,14 @@ their progress.
 # plain execution
 python examples/vector_mul.py
 python examples/matrix_mul.py
+python examples/reduction_sum.py
+python examples/reduction_sum_multi.py
 
 # start with API support to visualize in the UI
 python examples/vector_mul.py --api
 python examples/matrix_mul.py --api
+python examples/reduction_sum.py --api
+python examples/reduction_sum_multi.py --api
 ```
 
 When ``--api`` is used the script launches the FastAPI server in the background

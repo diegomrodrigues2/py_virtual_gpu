@@ -11,6 +11,7 @@ python examples/vector_mul.py
 python examples/convolution_2d.py
 python examples/matrix_mul.py
 python examples/reduction_sum.py
+python examples/reduction_sum_multi.py
 ```
 
 Each program allocates memory on the virtual device, launches a kernel and prints
