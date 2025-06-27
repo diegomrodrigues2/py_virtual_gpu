@@ -3,14 +3,18 @@ import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { vi } from 'vitest';
 import { GpuDetailView } from '../App';
-import { GPUState, KernelLaunchRecord } from '../types/types';
+import { GPUState, KernelLaunchRecord, MemorySlice } from '../types/types';
 import * as service from '../services/gpuSimulatorService';
 
 vi.mock('../services/gpuSimulatorService', () => ({
   fetchKernelLog: vi.fn(),
+  fetchGlobalMemorySlice: vi.fn(),
+  fetchConstantMemorySlice: vi.fn(),
 }));
 
 const mockFetch = service.fetchKernelLog as unknown as ReturnType<typeof vi.fn>;
+const mockFetchGlobalSlice = service.fetchGlobalMemorySlice as unknown as ReturnType<typeof vi.fn>;
+const mockFetchConstantSlice = service.fetchConstantMemorySlice as unknown as ReturnType<typeof vi.fn>;
 
 describe('GpuDetailView', () => {
   it('shows memory usage and sm cards', () => {
@@ -87,6 +91,39 @@ describe('GpuDetailView', () => {
 
     await userEvent.click(screen.getByRole('button', { name: /hide kernel log/i }));
     expect(screen.queryByText('dummy')).not.toBeInTheDocument();
+  });
+
+  it('fetches and displays memory slice', async () => {
+    const gpu: GPUState = {
+      id: '0',
+      name: 'GPU 0',
+      config: {
+        num_sms: 0,
+        global_mem_size: 1024,
+        shared_mem_per_sm_kb: 0,
+        registers_per_sm_total: 0,
+      },
+      global_memory: { used: 0, total: 1024 },
+      transfers: { H2D: 0, D2H: 0, bytes_transferred: 0 },
+      sms: [],
+      overall_load: 0,
+    };
+
+    const slice: MemorySlice = { offset: 4, size: 1, data: Buffer.from('A').toString('hex') };
+
+    mockFetchConstantSlice.mockResolvedValue(slice);
+
+    render(<GpuDetailView gpu={gpu} />);
+
+    await userEvent.selectOptions(screen.getByRole('combobox'), 'constant');
+    await userEvent.clear(screen.getByPlaceholderText('Offset'));
+    await userEvent.type(screen.getByPlaceholderText('Offset'), '4');
+    await userEvent.clear(screen.getByPlaceholderText('Size'));
+    await userEvent.type(screen.getByPlaceholderText('Size'), '1');
+    await userEvent.click(screen.getByRole('button', { name: /fetch/i }));
+
+    expect(mockFetchConstantSlice).toHaveBeenCalledWith('0', 4, 1);
+    expect(await screen.findByText('41')).toBeInTheDocument();
   });
 });
 
