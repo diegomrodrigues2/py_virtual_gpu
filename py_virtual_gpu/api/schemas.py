@@ -103,3 +103,12 @@ class SMDetailed(BaseModel):
     divergence_log: list[DivergenceRecord]
     counters: dict[str, int]
 
+
+class MemorySlice(BaseModel):
+    """Serialized view of a contiguous memory region."""
+
+    offset: int
+    size: int
+    data: str
+
+

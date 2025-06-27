@@ -154,6 +154,18 @@ class GPUManager:
             counters=sm.counters.copy(),
         )
 
+    def get_global_memory_slice(self, id: int, offset: int, size: int) -> bytes:
+        """Return ``size`` bytes from global memory of GPU ``id`` starting at ``offset``."""
+
+        gpu = self.get_gpu(id)
+        return gpu.global_memory.read(offset, size)
+
+    def get_constant_memory_slice(self, id: int, offset: int, size: int) -> bytes:
+        """Return ``size`` bytes from constant memory of GPU ``id`` starting at ``offset``."""
+
+        gpu = self.get_gpu(id)
+        return gpu.constant_memory.read(offset, size)
+
     def get_event_feed(self, since_cycle: int | None = None, limit: int = 100):
         """Return a global event feed aggregated from all GPUs."""
 
