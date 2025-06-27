@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+import types
 import httpx
 import pytest
 
@@ -71,10 +72,23 @@ def test_start_background_dashboard(monkeypatch):
             return
 
     dummy_proc = DummyProcess()
+    captured_env = {}
+    captured_cmd = []
+
+    def fake_popen(cmd, **kwargs):
+        captured_cmd.extend(cmd)
+        captured_env.update(kwargs.get("env", {}))
+        return dummy_proc
+
     monkeypatch.setattr(
         start_background_dashboard.__globals__["subprocess"],
         "Popen",
-        lambda *a, **kw: dummy_proc,
+        fake_popen,
+    )
+    monkeypatch.setattr(
+        start_background_dashboard.__globals__["shutil"],
+        "which",
+        lambda cmd: "/usr/bin/npm",
     )
 
     thread, proc, stop = start_background_dashboard(port=8003)
@@ -95,3 +109,87 @@ def test_start_background_dashboard(monkeypatch):
         thread.join(timeout=1)
 
     assert dummy_proc.terminated
+    assert captured_env["VITE_API_BASE_URL"] == "http://127.0.0.1:8003"
+
+
+def test_start_background_dashboard_windows(monkeypatch):
+    class DummyProcess:
+        def __init__(self):
+            self.args = None
+
+        def terminate(self):
+            return
+
+        def wait(self, timeout=None):
+            return
+
+    dummy_proc = DummyProcess()
+    captured = {}
+
+    def fake_popen(cmd, **kwargs):
+        captured["cmd"] = cmd
+        captured["env"] = kwargs.get("env", {})
+        return dummy_proc
+
+    monkeypatch.setattr(
+        start_background_dashboard.__globals__["subprocess"], "Popen", fake_popen
+    )
+    monkeypatch.setattr(
+        start_background_dashboard.__globals__["shutil"],
+        "which",
+        lambda cmd: r"C:\\node\\npm.cmd",
+    )
+    mock_os = types.SimpleNamespace(name="nt", environ={})
+    monkeypatch.setitem(start_background_dashboard.__globals__, "os", mock_os)
+
+    thread, proc, stop = start_background_dashboard(port=8004)
+    try:
+        stop()
+        thread.join(timeout=1)
+    finally:
+        pass
+
+    assert proc is dummy_proc
+    assert captured["cmd"][0] == "cmd.exe"
+    assert captured["env"]["VITE_API_BASE_URL"] == "http://127.0.0.1:8004"
+
+
+def test_start_background_dashboard_port_conflict(monkeypatch):
+    """UI port should change when it matches the API port."""
+
+    class DummyProcess:
+        def terminate(self):
+            return
+
+        def wait(self, timeout=None):
+            return
+
+    dummy_proc = DummyProcess()
+    captured_cmd = []
+
+    def fake_popen(cmd, **kwargs):
+        captured_cmd.extend(cmd)
+        return dummy_proc
+
+    monkeypatch.setattr(
+        start_background_dashboard.__globals__["subprocess"],
+        "Popen",
+        fake_popen,
+    )
+    monkeypatch.setattr(
+        start_background_dashboard.__globals__["shutil"],
+        "which",
+        lambda cmd: "/usr/bin/npm",
+    )
+
+    thread, proc, stop = start_background_dashboard(port=5173)
+    try:
+        stop()
+        thread.join(timeout=1)
+    finally:
+        pass
+
+    assert proc is dummy_proc
+    assert "--port" in captured_cmd
+    ui_port = captured_cmd[captured_cmd.index("--port") + 1]
+    assert ui_port != "5173"
