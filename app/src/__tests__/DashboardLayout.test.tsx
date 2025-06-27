@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { DashboardLayout } from '../App';
 import { GPUState, GpuSummary } from '../types/types';
@@ -23,6 +24,9 @@ const summary: GpuSummary = {
   overallLoad: 0,
   status: 'online'
 };
+
+const gpu2: GPUState = { ...gpu, id: '1', name: 'GPU 1' };
+const summary2: GpuSummary = { ...summary, id: '1', name: 'GPU 1' };
 
 describe('DashboardLayout view switching', () => {
   it('shows cluster view when currentView is cluster', () => {
@@ -55,6 +59,33 @@ describe('DashboardLayout view switching', () => {
       />
     );
     expect(screen.getByText(/GPU 0 \(0\) - Details/)).toBeInTheDocument();
+  });
+
+  it('switches views when buttons are clicked', async () => {
+    const Wrapper: React.FC = () => {
+      const [view, setView] = React.useState<'cluster' | 'detail'>('cluster');
+      return (
+        <DashboardLayout
+          gpuSummaries={[summary, summary2]}
+          selectedGpu={gpu}
+          allGpuStates={[gpu, gpu2]}
+          events={[]}
+          onSelectGpu={() => {}}
+          isLoading={false}
+          currentView={view}
+          onSetView={setView}
+        />
+      );
+    };
+
+    render(<Wrapper />);
+    expect(screen.getByText('GPU Cluster Overview')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'GPU Detail' }));
+    expect(screen.getByText(/GPU 0 \(0\) - Details/)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Cluster Overview' }));
+    expect(screen.getByText('GPU Cluster Overview')).toBeInTheDocument();
   });
 });
 
