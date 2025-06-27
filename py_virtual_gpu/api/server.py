@@ -106,11 +106,14 @@ def start_background_dashboard(
     env = os.environ.copy()
     env["VITE_API_BASE_URL"] = f"http://{host}:{port}"
 
+    # Using pipes for stdout/stderr can cause the npm process to block if the
+    # buffers fill up and nothing is reading from them. Redirect the output to
+    # ``DEVNULL`` so the dashboard continues to run without hanging.
     ui_proc = subprocess.Popen(
         cmd,
         cwd=app_dir,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
         env=env,
     )
 
