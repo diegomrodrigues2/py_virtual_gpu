@@ -42,14 +42,15 @@ const detail: SMDetailed = {
 describe('SmCard', () => {
   it('toggles detail view when button is clicked', async () => {
     mockFetch.mockResolvedValue(detail);
+    const user = userEvent.setup();
     render(<SmCard sm={sm} gpuId="0" />);
 
     const button = screen.getByRole('button', { name: /view details/i });
-    await userEvent.click(button);
+    await user.click(button);
     expect(mockFetch).toHaveBeenCalledWith('0', '0');
     expect(await screen.findByText(/no blocks scheduled/i)).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button', { name: /hide details/i }));
+    await user.click(screen.getByRole('button', { name: /hide details/i }));
     expect(screen.queryByText(/no blocks scheduled/i)).not.toBeInTheDocument();
   });
 });

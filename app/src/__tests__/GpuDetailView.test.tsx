@@ -60,6 +60,7 @@ describe('GpuDetailView', () => {
   });
 
   it('toggles kernel log visibility when button is clicked', async () => {
+    const user = userEvent.setup();
     const gpu: GPUState = {
       id: '0',
       name: 'GPU 0',
@@ -84,16 +85,17 @@ describe('GpuDetailView', () => {
     render(<GpuDetailView gpu={gpu} />);
 
     const button = screen.getByRole('button', { name: /show kernel log/i });
-    await userEvent.click(button);
+    await user.click(button);
 
     expect(mockFetch).toHaveBeenCalledWith('0');
     expect(await screen.findByText('dummy')).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button', { name: /hide kernel log/i }));
+    await user.click(screen.getByRole('button', { name: /hide kernel log/i }));
     expect(screen.queryByText('dummy')).not.toBeInTheDocument();
   });
 
   it('fetches and displays memory slice', async () => {
+    const user = userEvent.setup();
     const gpu: GPUState = {
       id: '0',
       name: 'GPU 0',
@@ -115,17 +117,17 @@ describe('GpuDetailView', () => {
 
     render(<GpuDetailView gpu={gpu} />);
 
-    await userEvent.selectOptions(screen.getByRole('combobox'), 'constant');
-    await userEvent.clear(screen.getByPlaceholderText('Offset'));
-    await userEvent.type(screen.getByPlaceholderText('Offset'), '4');
-    await userEvent.clear(screen.getByPlaceholderText('Size'));
-    await userEvent.type(screen.getByPlaceholderText('Size'), '1');
-    await userEvent.click(screen.getByRole('button', { name: /fetch/i }));
+    await user.selectOptions(screen.getByRole('combobox'), 'constant');
+    await user.clear(screen.getByPlaceholderText('Offset'));
+    await user.type(screen.getByPlaceholderText('Offset'), '4');
+    await user.clear(screen.getByPlaceholderText('Size'));
+    await user.type(screen.getByPlaceholderText('Size'), '1');
+    await user.click(screen.getByRole('button', { name: /fetch/i }));
 
     expect(mockFetchConstantSlice).toHaveBeenCalledWith('0', 4, 1);
     expect(await screen.findByText('41')).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button', { name: /clear/i }));
+    await user.click(screen.getByRole('button', { name: /clear/i }));
     expect(screen.queryByText('41')).not.toBeInTheDocument();
   });
 });

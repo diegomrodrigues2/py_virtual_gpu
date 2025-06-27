@@ -62,6 +62,7 @@ describe('DashboardLayout view switching', () => {
   });
 
   it('switches views when buttons are clicked', async () => {
+    const user = userEvent.setup();
     const Wrapper: React.FC = () => {
       const [view, setView] = React.useState<'cluster' | 'detail'>('cluster');
       return (
@@ -81,10 +82,10 @@ describe('DashboardLayout view switching', () => {
     render(<Wrapper />);
     expect(screen.getByText('GPU Cluster Overview')).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button', { name: 'GPU Detail' }));
+    await user.click(screen.getByRole('button', { name: 'GPU Detail' }));
     expect(screen.getByText(/GPU 0 \(0\) - Details/)).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button', { name: 'Cluster Overview' }));
+    await user.click(screen.getByRole('button', { name: 'Cluster Overview' }));
     expect(screen.getByText('GPU Cluster Overview')).toBeInTheDocument();
   });
 });
