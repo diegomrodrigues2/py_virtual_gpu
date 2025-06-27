@@ -1,7 +1,16 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import React from 'react';
+import { vi } from 'vitest';
 import { GpuDetailView } from '../App';
-import { GPUState } from '../types/types';
+import { GPUState, KernelLaunchRecord } from '../types/types';
+import * as service from '../services/gpuSimulatorService';
+
+vi.mock('../services/gpuSimulatorService', () => ({
+  fetchKernelLog: vi.fn(),
+}));
+
+const mockFetch = service.fetchKernelLog as unknown as ReturnType<typeof vi.fn>;
 
 describe('GpuDetailView', () => {
   it('shows memory usage and sm cards', () => {
@@ -44,6 +53,40 @@ describe('GpuDetailView', () => {
     expect(screen.getByText('Global Memory')).toBeInTheDocument();
     expect(screen.getByText('SM 0')).toBeInTheDocument();
     expect(screen.getByText('50%')).toBeInTheDocument();
+  });
+
+  it('toggles kernel log visibility when button is clicked', async () => {
+    const gpu: GPUState = {
+      id: '0',
+      name: 'GPU 0',
+      config: {
+        num_sms: 0,
+        global_mem_size: 1024,
+        shared_mem_per_sm_kb: 0,
+        registers_per_sm_total: 0,
+      },
+      global_memory: { used: 0, total: 1024 },
+      transfers: { H2D: 0, D2H: 0, bytes_transferred: 0 },
+      sms: [],
+      overall_load: 0,
+    };
+
+    const log: KernelLaunchRecord[] = [
+      { name: 'dummy', grid_dim: [1, 1, 1], block_dim: [1, 1, 1], start_cycle: 0 },
+    ];
+
+    mockFetch.mockResolvedValue(log);
+
+    render(<GpuDetailView gpu={gpu} />);
+
+    const button = screen.getByRole('button', { name: /show kernel log/i });
+    await userEvent.click(button);
+
+    expect(mockFetch).toHaveBeenCalledWith('0');
+    expect(await screen.findByText('dummy')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: /hide kernel log/i }));
+    expect(screen.queryByText('dummy')).not.toBeInTheDocument();
   });
 });
 
