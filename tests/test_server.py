@@ -6,7 +6,7 @@ import pytest
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from py_virtual_gpu.api.server import start_background_api
+from py_virtual_gpu.api.server import start_background_api, start_background_dashboard
 
 
 def test_start_background_api():
@@ -57,3 +57,41 @@ def test_start_background_api_suppresses_access_logs(monkeypatch):
         monkeypatch.setitem(sys.modules, 'ipykernel', None)
 
     assert captured_access_log.get('value') is False
+
+
+def test_start_background_dashboard(monkeypatch):
+    class DummyProcess:
+        def __init__(self):
+            self.terminated = False
+
+        def terminate(self):
+            self.terminated = True
+
+        def wait(self, timeout=None):
+            return
+
+    dummy_proc = DummyProcess()
+    monkeypatch.setattr(
+        start_background_dashboard.__globals__["subprocess"],
+        "Popen",
+        lambda *a, **kw: dummy_proc,
+    )
+
+    thread, proc, stop = start_background_dashboard(port=8003)
+    try:
+        for _ in range(50):
+            try:
+                resp = httpx.get("http://127.0.0.1:8003/status", timeout=1.0)
+                if resp.status_code == 200:
+                    break
+            except Exception:
+                time.sleep(0.1)
+        else:
+            pytest.fail("API server did not start")
+        assert thread.is_alive()
+        assert proc is dummy_proc
+    finally:
+        stop()
+        thread.join(timeout=1)
+
+    assert dummy_proc.terminated
