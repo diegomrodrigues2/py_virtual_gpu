@@ -8,7 +8,7 @@ import {
   TransfersState,
   SMDetailed,
 } from '../types/types';
-import { fetchSmDetail } from '../services/gpuSimulatorService';
+import { fetchSmDetail } from './gpuSimulatorService';
 import { SmDetailView } from './SmDetailView';
 
 // --- Icons ---
