@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from ...services import GPUManager, get_gpu_manager
-from ..schemas import GPUSummary, GPUState, GPUMetrics, SMDetailed
+from ..schemas import GPUSummary, GPUState, GPUMetrics, SMDetailed, MemorySlice
 
 router = APIRouter()
 
@@ -51,3 +51,35 @@ def sm_detail(
         return manager.get_sm_detail(id, sm_id, max_events)
     except IndexError:
         raise HTTPException(status_code=404, detail="SM not found")
+
+
+@router.get("/gpus/{id}/global_mem", response_model=MemorySlice)
+def global_mem_slice(
+    id: int,
+    offset: int = Query(..., ge=0),
+    size: int = Query(..., ge=0),
+    manager: GPUManager = Depends(get_gpu_manager),
+) -> MemorySlice:
+    """Return a slice of global memory for GPU ``id``."""
+
+    try:
+        data = manager.get_global_memory_slice(id, offset, size)
+    except IndexError:
+        raise HTTPException(status_code=404, detail="Invalid GPU id or bounds")
+    return MemorySlice(offset=offset, size=len(data), data=data.hex())
+
+
+@router.get("/gpus/{id}/constant_mem", response_model=MemorySlice)
+def constant_mem_slice(
+    id: int,
+    offset: int = Query(..., ge=0),
+    size: int = Query(..., ge=0),
+    manager: GPUManager = Depends(get_gpu_manager),
+) -> MemorySlice:
+    """Return a slice of constant memory for GPU ``id``."""
+
+    try:
+        data = manager.get_constant_memory_slice(id, offset, size)
+    except IndexError:
+        raise HTTPException(status_code=404, detail="Invalid GPU id or bounds")
+    return MemorySlice(offset=offset, size=len(data), data=data.hex())
