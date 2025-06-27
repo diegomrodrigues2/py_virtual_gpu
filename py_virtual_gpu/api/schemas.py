@@ -21,6 +21,15 @@ class TransferRecord(BaseModel):
     end_cycle: int
 
 
+class KernelLaunchRecord(BaseModel):
+    """Serialized kernel launch event."""
+
+    name: str
+    grid_dim: tuple[int, int, int]
+    block_dim: tuple[int, int, int]
+    start_cycle: int
+
+
 class GlobalMemState(BaseModel):
     """State of the GPU global memory."""
 

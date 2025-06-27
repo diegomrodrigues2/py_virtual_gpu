@@ -166,6 +166,14 @@ class GPUManager:
         gpu = self.get_gpu(id)
         return gpu.constant_memory.read(offset, size)
 
+    def get_kernel_log(self, id: int):
+        """Return a list of kernel launch records for GPU ``id``."""
+
+        from ..api.schemas import KernelLaunchRecord
+
+        gpu = self.get_gpu(id)
+        return [KernelLaunchRecord(**asdict(ev)) for ev in gpu.get_kernel_log()]
+
     def get_event_feed(self, since_cycle: int | None = None, limit: int = 100):
         """Return a global event feed aggregated from all GPUs."""
 

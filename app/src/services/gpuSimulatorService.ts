@@ -8,6 +8,7 @@ import {
   TransfersState,
   SMDetailed,
   MemorySlice,
+  KernelLaunchRecord,
 } from '../types/types';
 
 const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:8000';
@@ -138,5 +139,11 @@ export const fetchConstantMemorySlice = async (
   return fetchJSON<MemorySlice>(
     `${API_BASE}/gpus/${gpuId}/constant_mem?offset=${offset}&size=${size}`,
   );
+};
+
+export const fetchKernelLog = async (
+  gpuId: string,
+): Promise<KernelLaunchRecord[]> => {
+  return fetchJSON<KernelLaunchRecord[]>(`${API_BASE}/gpus/${gpuId}/kernel_log`);
 };
 

@@ -55,6 +55,13 @@ export interface DivergenceRecord {
   mask_after: boolean[];
 }
 
+export interface KernelLaunchRecord {
+  name: string;
+  grid_dim: [number, number, number];
+  block_dim: [number, number, number];
+  start_cycle: number;
+}
+
 export interface MemorySlice {
   offset: number;
   size: number;

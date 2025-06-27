@@ -3,7 +3,14 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from ...services import GPUManager, get_gpu_manager
-from ..schemas import GPUSummary, GPUState, GPUMetrics, SMDetailed, MemorySlice
+from ..schemas import (
+    GPUSummary,
+    GPUState,
+    GPUMetrics,
+    SMDetailed,
+    MemorySlice,
+    KernelLaunchRecord,
+)
 
 router = APIRouter()
 
@@ -83,3 +90,12 @@ def constant_mem_slice(
     except IndexError:
         raise HTTPException(status_code=404, detail="Invalid GPU id or bounds")
     return MemorySlice(offset=offset, size=len(data), data=data.hex())
+
+
+@router.get("/gpus/{id}/kernel_log", response_model=list[KernelLaunchRecord])
+def kernel_log(
+    id: int, manager: GPUManager = Depends(get_gpu_manager)
+) -> list[KernelLaunchRecord]:
+    """Return the kernel launch log for GPU ``id``."""
+
+    return manager.get_kernel_log(id)

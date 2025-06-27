@@ -121,15 +121,19 @@ cd app && npm install && npm run dev
 ```
 
 The dashboard makes periodic requests to `/gpus` to list available devices,
-`/gpus/<id>/state` for detailed metrics and `/events` for the event log. If you
+`/gpus/<id>/state` for detailed metrics, `/gpus/<id>/kernel_log` for the kernel launch history and `/events` for the consolidated event feed. If you
 want to confirm the API is responding during an example run you can query these
 endpoints manually using `curl`:
 
 ```bash
 curl http://localhost:8000/gpus
 curl http://localhost:8000/gpus/0/state
+curl http://localhost:8000/gpus/0/kernel_log
 curl http://localhost:8000/events
 ```
+
+In the dashboard, navigate to a GPU detail page and use the **Show Kernel Log**
+button to toggle a table listing all recorded kernel launches.
 
 ## Using with Jupyter/REPL
 

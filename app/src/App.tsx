@@ -4,6 +4,7 @@ import { GPUState, SimulatorEvent, GpuSummary, BackendData, MemorySlice } from '
 import { fetchBackendData, fetchGpuState, fetchGlobalMemorySlice, fetchConstantMemorySlice } from './services/gpuSimulatorService';
 import { IconChip, IconMemory, IconActivity, IconInfo, IconChevronDown, IconChevronUp, Tooltip, MemoryUsageDisplay, SmCard, GpuOverviewCard, TransfersDisplay, EventLog, IconGpu, IconLink, StatDisplay } from './components/components';
 import { MemoryViewer } from './components/MemoryViewer';
+import { KernelLogView } from './components/KernelLogView';
 
 
 interface DashboardLayoutProps {
@@ -141,6 +142,7 @@ export const GpuDetailView: React.FC<{ gpu: GPUState }> = ({ gpu }) => {
   const [memType, setMemType] = useState<'global' | 'constant'>('global');
   const [slice, setSlice] = useState<MemorySlice | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showKernelLog, setShowKernelLog] = useState(false);
 
   const fetchSlice = async () => {
     setLoading(true);
@@ -209,6 +211,13 @@ export const GpuDetailView: React.FC<{ gpu: GPUState }> = ({ gpu }) => {
             </div>
             {loading && <p className="text-xs text-gray-400">Loading...</p>}
             {slice && <MemoryViewer slice={slice} />}
+            <button
+              onClick={() => setShowKernelLog((v) => !v)}
+              className="mt-4 px-2 py-1 bg-gray-700 rounded text-xs"
+            >
+              {showKernelLog ? 'Hide Kernel Log' : 'Show Kernel Log'}
+            </button>
+            {showKernelLog && <KernelLogView gpuId={gpu.id} />}
           </div>
       </div>
 
