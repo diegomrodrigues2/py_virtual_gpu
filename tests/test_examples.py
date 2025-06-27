@@ -41,3 +41,9 @@ def test_reduction_example(capsys):
     mod.main()
     kernel, host = _parse_results(capsys.readouterr().out)
     assert kernel == host
+    
+def test_vector_sum_atomic_example(capsys):
+    mod = importlib.import_module("examples.vector_sum_atomic")
+    mod.main()
+    kernel, host = _parse_results(capsys.readouterr().out)
+    assert kernel == host
