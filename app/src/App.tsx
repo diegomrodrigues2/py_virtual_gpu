@@ -33,7 +33,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-4 mb-6"> {/* Added gap and mb for better spacing */}
-        {allGpuStates.length > 1 && (
+        {/* Always show view toggle when GPUs are available */}
+        {allGpuStates.length > 0 && (
              <div className="flex items-center space-x-2 bg-gray-800 p-2 rounded-lg">
                 <span className="text-sm font-medium text-gray-300">View:</span>
                 <button
@@ -256,7 +257,7 @@ const App: React.FC = () => {
         if (!selectedGpuId || !data.gpuStates.find(g => g.id === selectedGpuId)) {
           setSelectedGpuId(data.gpuStates[0].id);
         }
-        if (data.gpuStates.length === 1 && currentView === 'cluster') {
+        if (data.gpuStates.length === 1 && currentView === 'cluster' && selectedGpuId === null) {
              setCurrentView('detail');
         }
       } else { 
@@ -315,7 +316,7 @@ const App: React.FC = () => {
               setSelectedGpuId(backendData.gpuStates[0].id);
             }
         } else if (backendData.gpuStates.length > 1) {
-            if (currentView === 'detail' && !selectedGpuId && backendData.gpuStates[0]) {
+            if (!selectedGpuId && backendData.gpuStates[0]) {
                  setSelectedGpuId(backendData.gpuStates[0].id);
             }
         } else if (backendData.gpuStates.length === 0) {
@@ -324,7 +325,7 @@ const App: React.FC = () => {
         }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [backendData?.gpuStates.length, currentView]); 
+  }, [backendData?.gpuStates.length]);
 
   if (isLoading && !backendData) {
     return (
