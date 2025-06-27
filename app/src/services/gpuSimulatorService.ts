@@ -1,4 +1,14 @@
-import { GPUState, SimulatorEvent, GpuSummary, BackendData, StreamingMultiprocessorState, GPUConfig, TransfersState, SMDetailed } from '../types/types';
+import {
+  GPUState,
+  SimulatorEvent,
+  GpuSummary,
+  BackendData,
+  StreamingMultiprocessorState,
+  GPUConfig,
+  TransfersState,
+  SMDetailed,
+  MemorySlice,
+} from '../types/types';
 
 const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:8000';
 
@@ -108,5 +118,25 @@ export const fetchBackendData = async (): Promise<BackendData> => {
   const events = await fetchJSON<SimulatorEvent[]>(`${API_BASE}/events`);
 
   return { gpuSummaries, gpuStates, events };
+};
+
+export const fetchGlobalMemorySlice = async (
+  gpuId: string,
+  offset: number,
+  size: number,
+): Promise<MemorySlice> => {
+  return fetchJSON<MemorySlice>(
+    `${API_BASE}/gpus/${gpuId}/global_mem?offset=${offset}&size=${size}`,
+  );
+};
+
+export const fetchConstantMemorySlice = async (
+  gpuId: string,
+  offset: number,
+  size: number,
+): Promise<MemorySlice> => {
+  return fetchJSON<MemorySlice>(
+    `${API_BASE}/gpus/${gpuId}/constant_mem?offset=${offset}&size=${size}`,
+  );
 };
 

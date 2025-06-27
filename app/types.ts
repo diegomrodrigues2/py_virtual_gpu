@@ -20,6 +20,12 @@ export interface TransfersState {
   cycles_transferred?: number; 
 }
 
+export interface MemorySlice {
+  offset: number;
+  size: number;
+  data: string; // hex-encoded
+}
+
 export interface StreamingMultiprocessorState {
   id: number;
   blocks_active: number;
