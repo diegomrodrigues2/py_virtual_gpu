@@ -10,6 +10,7 @@ Execute the scripts directly with Python:
 python examples/vector_mul.py
 python examples/convolution_2d.py
 python examples/matrix_mul.py
+python examples/reduction_sum.py
 ```
 
 Each program allocates memory on the virtual device, launches a kernel and prints

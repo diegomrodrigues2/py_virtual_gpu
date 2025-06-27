@@ -35,3 +35,9 @@ def test_matrix_mul_example(capsys):
     mod.main()
     kernel, host = _parse_results(capsys.readouterr().out)
     assert kernel == host
+
+def test_reduction_example(capsys):
+    mod = importlib.import_module("examples.reduction_sum")
+    mod.main()
+    kernel, host = _parse_results(capsys.readouterr().out)
+    assert kernel == host
