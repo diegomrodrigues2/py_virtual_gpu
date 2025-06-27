@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { KernelLaunchRecord } from '../types/types';
-import { fetchKernelLog } from '../services/gpuSimulatorService';
+import { fetchKernelLog } from './gpuSimulatorService';
 
 export const KernelLogView: React.FC<{ gpuId: string }> = ({ gpuId }) => {
   const [log, setLog] = useState<KernelLaunchRecord[]>([]);

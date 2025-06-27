@@ -1,7 +1,12 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { GPUState, SimulatorEvent, GpuSummary, BackendData, MemorySlice } from './types/types';
-import { fetchBackendData, fetchGpuState, fetchGlobalMemorySlice, fetchConstantMemorySlice } from './services/gpuSimulatorService';
+import {
+  fetchBackendData,
+  fetchGpuState,
+  fetchGlobalMemorySlice,
+  fetchConstantMemorySlice,
+} from './gpuSimulatorService';
 import { IconChip, IconMemory, IconActivity, IconInfo, IconChevronDown, IconChevronUp, Tooltip, MemoryUsageDisplay, SmCard, GpuOverviewCard, TransfersDisplay, EventLog, IconGpu, IconLink, StatDisplay } from './components/components';
 import { MemoryViewer } from './components/MemoryViewer';
 import { KernelLogView } from './components/KernelLogView';
