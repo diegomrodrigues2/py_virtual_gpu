@@ -34,10 +34,13 @@ def test_events_endpoint_returns_all():
         pass
 
     gpu.launch_kernel(dummy, (1, 1, 1), (1, 1, 1))
+    gpu.synchronize()
 
     with TestClient(app) as client:
         resp = client.get("/events")
         assert resp.status_code == 200
         data = resp.json()
-        assert len(data) == 4
+        assert len(data) == 6
         assert data == sorted(data, key=lambda e: e["start_cycle"])
+        types = {ev["type"] for ev in data}
+        assert {"kernel", "transfer", "divergence", "BLOCK_START", "BLOCK_END"} <= types

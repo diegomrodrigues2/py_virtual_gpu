@@ -55,6 +55,13 @@ export interface DivergenceRecord {
   mask_after: boolean[];
 }
 
+export interface BlockEventRecord {
+  block_idx: [number, number, number];
+  sm_id: number;
+  phase: string;
+  start_cycle: number;
+}
+
 export interface KernelLaunchRecord {
   name: string;
   grid_dim: [number, number, number];
@@ -74,6 +81,7 @@ export interface SMDetailed {
   warps: WarpSummary[];
   divergence_log: DivergenceRecord[];
   counters: Record<string, number>;
+  block_event_log: BlockEventRecord[];
 }
 
 export interface GPUState {

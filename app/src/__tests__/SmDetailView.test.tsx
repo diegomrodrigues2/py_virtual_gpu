@@ -11,9 +11,14 @@ describe('SmDetailView', () => {
       warps: [{ id: 1, active_threads: 32 }],
       divergence_log: [],
       counters: {},
+      block_event_log: [
+        { block_idx: [0, 0, 0], sm_id: 0, phase: 'start', start_cycle: 1 },
+      ],
     };
     render(<SmDetailView sm={detail} />);
     expect(screen.getByText(/Block \[0, 0, 0\] - pending/)).toBeInTheDocument();
     expect(screen.getByText(/Warp 1: 32 threads active/)).toBeInTheDocument();
+    expect(screen.getByText(/Block \[0, 0, 0\] start/i)).toBeInTheDocument();
+    expect(screen.getByText(/Cycle 1/)).toBeInTheDocument();
   });
 });

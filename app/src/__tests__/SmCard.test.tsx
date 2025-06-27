@@ -36,6 +36,7 @@ const detail: SMDetailed = {
   warps: [],
   divergence_log: [],
   counters: {},
+  block_event_log: [],
 };
 
 describe('SmCard', () => {

@@ -12,6 +12,16 @@ from .thread import Thread  # type: ignore
 from .warp import Warp
 from .dispatch import Instruction
 
+
+@dataclass
+class BlockEvent:
+    """Record the execution of a thread block on this SM."""
+
+    block_idx: tuple[int, int, int]
+    sm_id: int
+    phase: str  # "start" or "end"
+    start_cycle: int = 0
+
 if TYPE_CHECKING:  # pragma: no cover - type hinting
     from .virtualgpu import VirtualGPU
 
@@ -55,6 +65,7 @@ class StreamingMultiprocessor:
         }
         self.stats: Dict[str, int] = {"extra_cycles": 0}
         self.divergence_log: List[DivergenceEvent] = []
+        self.block_log: List[BlockEvent] = []
         self.gpu = parent_gpu
 
     # ------------------------------------------------------------------
@@ -69,6 +80,10 @@ class StreamingMultiprocessor:
     def execute_block(self, block: ThreadBlock) -> None:
         """Execute ``block`` either directly or via warp scheduling."""
 
+        start = self.gpu.current_cycle() if self.gpu is not None else len(self.block_log)
+        idx = getattr(block, "block_idx", (0, 0, 0))
+        self.block_log.append(BlockEvent(idx, self.id, "start", start))
+
         # ``ThreadBlock`` instances created by :class:`VirtualGPU` store the
         # kernel function and its arguments. When present we run the block
         # directly using Python threads which prevents the unfinished ``Warp``
@@ -79,6 +94,10 @@ class StreamingMultiprocessor:
             block.execute(func, *args)
             num_warps = (len(block.threads) + self.warp_size - 1) // self.warp_size
             self.counters["warps_executed"] += num_warps
+            if self.gpu is not None:
+                self.gpu._cycle_counter += 1
+            idx = getattr(block, "block_idx", (0, 0, 0))
+            self.block_log.append(BlockEvent(idx, self.id, "end", self.gpu.current_cycle() if self.gpu is not None else len(self.block_log)))
             return
 
         # Fallback for tests or custom blocks that do not define a kernel.
@@ -98,6 +117,11 @@ class StreamingMultiprocessor:
             self._run_round_robin()
         else:
             self.dispatch()
+
+        if self.gpu is not None:
+            self.gpu._cycle_counter += 1
+        idx = getattr(block, "block_idx", (0, 0, 0))
+        self.block_log.append(BlockEvent(idx, self.id, "end", self.gpu.current_cycle() if self.gpu is not None else len(self.block_log)))
 
     def execute_warp(self, warp_threads: List[Thread]) -> None:
         """Conceptual lock-step execution of a warp."""
@@ -173,6 +197,16 @@ class StreamingMultiprocessor:
 
         self.divergence_log.clear()
 
+    def get_block_event_log(self) -> List[BlockEvent]:
+        """Return a list of recorded block execution events."""
+
+        return list(self.block_log)
+
+    def clear_block_event_log(self) -> None:
+        """Clear ``block_log`` without resetting counters."""
+
+        self.block_log.clear()
+
     # ------------------------------------------------------------------
     # Statistics reporting
     # ------------------------------------------------------------------
@@ -213,4 +247,4 @@ class StreamingMultiprocessor:
         )
 
 
-__all__ = ["StreamingMultiprocessor", "DivergenceEvent"]
+__all__ = ["StreamingMultiprocessor", "DivergenceEvent", "BlockEvent"]
