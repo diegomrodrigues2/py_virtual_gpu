@@ -60,7 +60,9 @@ from py_virtual_gpu.thread_block import ThreadBlock
 
 def test_threadfence_block_orders_writes_between_threads():
     tb = ThreadBlock((0, 0, 0), (2, 1, 1), (1, 1, 1), shared_mem_size=1)
-    results = [0, 0]
+    from multiprocessing import Manager
+
+    results = Manager().list([0, 0])
 
     def kernel(tidx, bidx, bdim, gdim, barrier, out):
         if tidx[0] == 0:
@@ -70,4 +72,4 @@ def test_threadfence_block_orders_writes_between_threads():
         out[tidx[0]] = tb.shared_mem.read(0, 1)[0]
 
     tb.execute(kernel, tb.barrier, results)
-    assert results[1] == 7
+    assert list(results)[1] == 7

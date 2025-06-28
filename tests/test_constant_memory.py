@@ -55,7 +55,9 @@ def test_set_constant_visible_in_kernel():
     gpu.sms = [DummySM()]
     gpu.set_constant(b"hello")
 
-    captured = {}
+    from multiprocessing import Manager
+
+    captured = Manager().dict()
 
     def kernel(tidx, bidx, bdim, gdim):
         captured["data"] = VirtualGPU.get_current().read_constant(0, 5)

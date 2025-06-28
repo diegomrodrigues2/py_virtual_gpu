@@ -26,7 +26,9 @@ def test_initialize_threads_creates_all():
 
 def test_execute_invokes_kernel_for_each_thread():
     tb = ThreadBlock((0, 0, 0), (2, 1, 1), (1, 1, 1), shared_mem_size=1)
-    called = []
+    from multiprocessing import Manager
+
+    called = Manager().list()
 
     def kernel(tidx, bidx, bdim, gdim, value):
         called.append((tidx, bidx, value))
@@ -36,7 +38,7 @@ def test_execute_invokes_kernel_for_each_thread():
     assert len(tb.threads) == 2
     assert len(called) == 2
     expected = [((0, 0, 0), (0, 0, 0), 42), ((1, 0, 0), (0, 0, 0), 42)]
-    assert sorted(called) == sorted(expected)
+    assert sorted(list(called)) == sorted(expected)
 
 
 def test_repr_contains_info():
@@ -78,7 +80,9 @@ def test_barrier_sync_invokes_wait(block_dim):
 def test_barrier_wait_orders_entries():
     block_dim = (4, 1, 1)
     tb = ThreadBlock((0, 0, 0), block_dim, (1, 1, 1), shared_mem_size=0)
-    records = []
+    from multiprocessing import Manager
+
+    records = Manager().list()
 
     def kernel(tidx, bidx, bdim, gdim, barrier, log):
         log.append(("before", tidx))
@@ -90,8 +94,8 @@ def test_barrier_wait_orders_entries():
     total_threads = block_dim[0] * block_dim[1] * block_dim[2]
     assert len(records) == 2 * total_threads
 
-    before_indices = [i for i, r in enumerate(records) if r[0] == "before"]
-    after_indices = [i for i, r in enumerate(records) if r[0] == "after"]
+    before_indices = [i for i, r in enumerate(list(records)) if r[0] == "before"]
+    after_indices = [i for i, r in enumerate(list(records)) if r[0] == "after"]
 
     assert len(before_indices) == total_threads
     assert len(after_indices) == total_threads
@@ -114,7 +118,9 @@ def test_barrier_timeout_raises_synchronization_error():
         shared_mem_size=0,
         barrier_timeout=0.05,
     )
-    errors = []
+    from multiprocessing import Manager
+
+    errors = Manager().list()
 
     def kernel(tidx, bidx, bdim, gdim, log):
         if tidx[0] == 0:
@@ -125,7 +131,7 @@ def test_barrier_timeout_raises_synchronization_error():
             log.append(tidx)
 
     tb.execute(kernel, errors)
-    assert errors == [(1, 0, 0)]
+    assert list(errors) == [(1, 0, 0)]
 
 
 def test_barrier_wait_time_accumulates(monkeypatch):
