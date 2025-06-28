@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from multiprocessing import Barrier, Process
+from uuid import uuid4
+from multiprocessing import Array
 from threading import BrokenBarrierError
 from multiprocessing import Lock
 from typing import Callable, List, Tuple, Any
@@ -49,6 +51,8 @@ class ThreadBlock:
         self.shared_mem: SharedMemory = SharedMemory(shared_mem_size)
         total_threads = block_dim[0] * block_dim[1] * block_dim[2]
         self.barrier: Barrier = Barrier(parties=total_threads)
+        self.warp_buffer = Array('i', total_threads)
+        self.uid: str = uuid4().hex
         self.threads: List[Thread] = []
         self._initialized: bool = False
         self.barrier_timeout = barrier_timeout
@@ -89,6 +93,8 @@ class ThreadBlock:
                     setattr(t, "grid_dim", self.grid_dim)
                     setattr(t, "shared_mem", self.shared_mem)
                     setattr(t, "barrier", self.barrier)
+                    setattr(t, "barrier_uid", self.uid)
+                    setattr(t, "warp_buffer", self.warp_buffer)
                     setattr(t, "barrier_timeout", self.barrier_timeout)
                     setattr(t, "block", self)
                     self.threads.append(t)
