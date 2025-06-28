@@ -118,6 +118,8 @@ class ThreadBlock:
             When ``True`` use ``threading.Thread`` instead of
             ``multiprocessing.Process``. This provides a fallback for
             environments where process forking is undesirable.
+            On Windows, this is automatically set to ``True`` to avoid
+            pickling issues.
         """
         self.initialize_threads(kernel_func, *args)
         if not use_threads:

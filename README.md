@@ -45,7 +45,7 @@ gpu.set_constant(b"values")
 - `Thread.alloc_local(size)` reserves bytes in `LocalMemory` for large kernel variables.
 - Pointers returned by `malloc` are `DevicePointer` objects that support arithmetic and indexing (`ptr + n`, `ptr[i]`, etc.) similar to CUDA C++.
 - `atomicAdd`, `atomicSub`, `atomicCAS`, `atomicMax`, `atomicMin` and `atomicExchange` operate on `DevicePointer`. The same methods are also available on `SharedMemory` and `GlobalMemory`.
-- Kernel threads run as ``multiprocessing.Process`` to bypass the GIL. Use ``ThreadBlock.execute(..., use_threads=True)`` to fall back to ``threading.Thread`` if processes are not desired.
+- Kernel threads run as ``multiprocessing.Process`` to bypass the GIL. Use ``ThreadBlock.execute(..., use_threads=True)`` to fall back to ``threading.Thread`` if processes are not desired. On Windows, threads are automatically used instead of processes to avoid pickling issues. On Windows, threads are automatically used instead of processes to avoid pickling issues.
 
 ### Atomic Operations
 
