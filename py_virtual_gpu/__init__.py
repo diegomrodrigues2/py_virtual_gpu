@@ -8,6 +8,7 @@ from .thread_block import ThreadBlock
 from .warp import Warp, is_coalesced
 from .sync import syncthreads
 from .fence import threadfence_block, threadfence, threadfence_system
+from .warp_utils import shfl_sync, ballot_sync
 from .dispatch import Instruction, SIMTStack
 from .transfer import TransferEvent
 from .atomics import (
@@ -64,6 +65,8 @@ __all__ = [
     "atomicMin",
     "atomicExchange",
     "syncthreads",
+    "shfl_sync",
+    "ballot_sync",
     "threadfence_block",
     "threadfence",
     "threadfence_system",
