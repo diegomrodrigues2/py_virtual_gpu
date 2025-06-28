@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from threading import Lock
-from typing import Any, Dict
+from multiprocessing import Lock, Manager
+from typing import Any
 
 from .thread import get_current_thread
 
@@ -9,8 +9,9 @@ __all__ = ["shfl_sync", "ballot_sync"]
 
 # Shared dictionaries keyed by Barrier instances used by the threads. Each entry
 # is cleared once all threads of the warp have read the result.
-_shfl_values: Dict[int, Dict[int, Any]] = {}
-_ballot_values: Dict[int, Dict[int, bool]] = {}
+_manager = Manager()
+_shfl_values = _manager.dict()  # type: ignore[var-annotated]
+_ballot_values = _manager.dict()  # type: ignore[var-annotated]
 _lock = Lock()
 
 
@@ -31,7 +32,9 @@ def shfl_sync(value: Any, src_lane: int) -> Any:
     key = id(barrier)
     lane = thread.thread_idx[0]
     with _lock:
-        buf = _shfl_values.setdefault(key, {})
+        if key not in _shfl_values:
+            _shfl_values[key] = _manager.dict()  # type: ignore[index]
+        buf = _shfl_values[key]
         buf[lane] = value
     barrier.wait()
     with _lock:
@@ -55,7 +58,9 @@ def ballot_sync(predicate: bool) -> int:
     key = id(barrier)
     lane = thread.thread_idx[0]
     with _lock:
-        buf = _ballot_values.setdefault(key, {})
+        if key not in _ballot_values:
+            _ballot_values[key] = _manager.dict()  # type: ignore[index]
+        buf = _ballot_values[key]
         buf[lane] = bool(predicate)
     barrier.wait()
     with _lock:

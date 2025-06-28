@@ -12,7 +12,9 @@ from py_virtual_gpu.errors import SynchronizationError
 def test_sync_grid_success():
     gpu = VirtualGPU(0, 32, barrier_timeout=0.1)
 
-    records = []
+    from multiprocessing import Manager
+
+    records = Manager().list()
 
     def kernel(tidx, bidx, bdim, gdim, log):
         log.append(("before", tidx))
@@ -23,8 +25,8 @@ def test_sync_grid_success():
 
     total_threads = 2
     assert len(records) == 2 * total_threads
-    before = [i for i, r in enumerate(records) if r[0] == "before"]
-    after = [i for i, r in enumerate(records) if r[0] == "after"]
+    before = [i for i, r in enumerate(list(records)) if r[0] == "before"]
+    after = [i for i, r in enumerate(list(records)) if r[0] == "after"]
     assert len(before) == total_threads
     assert len(after) == total_threads
     assert min(after) > max(before)
@@ -32,7 +34,9 @@ def test_sync_grid_success():
 
 def test_sync_grid_missing_thread_raises():
     gpu = VirtualGPU(0, 32, barrier_timeout=0.05)
-    errors = []
+    from multiprocessing import Manager
+
+    errors = Manager().list()
 
     def kernel(tidx, bidx, bdim, gdim, log):
         if tidx[0] == 0:
@@ -44,4 +48,4 @@ def test_sync_grid_missing_thread_raises():
 
     gpu.launch_kernel(kernel, (1, 1, 1), (2, 1, 1), errors, cooperative=True)
 
-    assert errors == [(1, 0, 0)]
+    assert list(errors) == [(1, 0, 0)]

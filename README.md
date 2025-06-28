@@ -49,6 +49,9 @@ gpu.set_constant(b"valores")
   aritmética e indexação (`ptr + n`, `ptr[i]`, etc.), imitando a sintaxe do
   CUDA C++.
 - Funcoes `atomicAdd`, `atomicSub`, `atomicCAS`, `atomicMax`, `atomicMin` e `atomicExchange` realizam operacoes atomicas sobre `DevicePointer`. Os mesmos metodos continuam disponiveis em `SharedMemory` e `GlobalMemory`.
+- As threads do kernel são executadas como ``multiprocessing.Process`` para
+  escapar do GIL. Use ``ThreadBlock.execute(..., use_threads=True)`` para voltar
+  ao modelo de ``threading.Thread`` quando processos não forem desejados.
 ### Operacoes Atomicas
 
 ```python

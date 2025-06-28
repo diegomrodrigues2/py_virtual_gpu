@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from multiprocessing import Barrier
-from threading import BrokenBarrierError, Lock
+from multiprocessing import Barrier, Process
+from threading import BrokenBarrierError
+from multiprocessing import Lock
 from typing import Callable, List, Tuple, Any
 from threading import Thread as _PyThread
 from time import perf_counter
@@ -93,10 +94,28 @@ class ThreadBlock:
                     self.threads.append(t)
         self._initialized = True
 
-    def execute(self, kernel_func: Callable[..., Any], *args: Any) -> None:
-        """Run all threads in this block invoking their ``run`` method."""
+    def execute(
+        self,
+        kernel_func: Callable[..., Any],
+        *args: Any,
+        use_threads: bool = False,
+    ) -> None:
+        """Run all threads in this block invoking their ``run`` method.
+
+        Parameters
+        ----------
+        kernel_func:
+            Kernel function each thread/process should execute.
+        *args:
+            Extra arguments forwarded to ``kernel_func``.
+        use_threads:
+            When ``True`` use ``threading.Thread`` instead of
+            ``multiprocessing.Process``. This provides a fallback for
+            environments where process forking is undesirable.
+        """
         self.initialize_threads(kernel_func, *args)
-        workers: List[_PyThread] = []
+        Worker = _PyThread if use_threads else Process
+        workers: List[Worker] = []
         for t in self.threads:
             run = getattr(t, "run", None)
             if callable(run):
@@ -107,7 +126,7 @@ class ThreadBlock:
                     t.grid_dim,
                     *args,
                 )
-                worker = _PyThread(target=run, args=(kernel_func, *params))
+                worker = Worker(target=run, args=(kernel_func, *params))
                 workers.append(worker)
                 worker.start()
 
