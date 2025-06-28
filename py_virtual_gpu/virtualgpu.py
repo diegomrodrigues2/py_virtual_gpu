@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from multiprocessing import Queue, Pool
+from multiprocessing import Queue, Pool, Barrier
 from typing import List, Any, Tuple, Optional, Callable
 from math import ceil
 
@@ -276,6 +276,7 @@ class VirtualGPU:
         grid_dim: Tuple[int, ...],
         block_dim: Tuple[int, ...],
         *args: Any,
+        cooperative: bool = False,
     ) -> None:
         """Divide ``grid_dim`` into blocks and queue them for execution.
 
@@ -300,6 +301,11 @@ class VirtualGPU:
 
         gx, gy, gz = (list(grid_dim) + [1, 1, 1])[:3]
         bx, by, bz = (list(block_dim) + [1, 1, 1])[:3]
+
+        grid_barrier: Barrier | None = None
+        if cooperative:
+            total_threads = gx * gy * gz * bx * by * bz
+            grid_barrier = Barrier(parties=total_threads)
 
         start = self.current_cycle()
         self.kernel_log.append(
@@ -330,6 +336,9 @@ class VirtualGPU:
                         setattr(t, "global_mem", self.global_memory)
                         setattr(t, "const_mem", self.constant_memory)
                         setattr(t, "constant_mem", self.constant_memory)
+                        if grid_barrier is not None:
+                            setattr(t, "grid_barrier", grid_barrier)
+                            setattr(t, "grid_barrier_timeout", self.barrier_timeout)
                     self._launched_blocks.append(tb)
 
                     if self.pool is not None:

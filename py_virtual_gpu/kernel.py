@@ -32,12 +32,20 @@ class KernelFunction:
     def __call__(self, *args: object, **kwargs: object) -> object:
         gd = self.grid_dim or kwargs.pop("grid_dim", None)
         bd = self.block_dim or kwargs.pop("block_dim", None)
+        cooperative = kwargs.pop("cooperative", False)
         if gd is None or bd is None:
             raise TypeError(
                 f"Kernel '{self.__name__}' requires grid_dim and block_dim"
             )
         gpu = VirtualGPU.get_current()
-        return gpu.launch_kernel(self._func, gd, bd, *args, **kwargs)
+        return gpu.launch_kernel(
+            self._func,
+            gd,
+            bd,
+            *args,
+            cooperative=cooperative,
+            **kwargs,
+        )
 
 
 def kernel(
