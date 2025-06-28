@@ -1,23 +1,21 @@
-# Contribuindo
+# Contributing
 
-## Setup de desenvolvimento
+## Development setup
 
-1. Crie um ambiente virtual opcionalmente e instale o pacote no modo editável com as dependências opcionais definidas em `[project.optional-dependencies]` do `pyproject.toml`:
+1. Optionally create a virtual environment and install the package in editable mode with the optional dependencies defined in `[project.optional-dependencies]` of `pyproject.toml`:
 
 ```bash
 pip install -e .[api]
 ```
 
-2. Instale também os pacotes listados em `requirements.txt`:
+2. Also install the packages listed in `requirements.txt`:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-3. Execute a suíte de testes na raiz do repositório:
+3. Run the test suite at the repository root:
 
 ```bash
 pytest
 ```
-
-
