@@ -6,6 +6,7 @@ from .memory import DevicePointer
 from .streaming_multiprocessor import StreamingMultiprocessor, DivergenceEvent
 from .thread_block import ThreadBlock
 from .warp import Warp, is_coalesced
+from .sync import syncthreads
 from .dispatch import Instruction, SIMTStack
 from .transfer import TransferEvent
 from .atomics import (
@@ -61,5 +62,6 @@ __all__ = [
     "atomicMax",
     "atomicMin",
     "atomicExchange",
+    "syncthreads",
 ]
 

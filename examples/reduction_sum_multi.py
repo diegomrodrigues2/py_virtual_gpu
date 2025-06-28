@@ -3,7 +3,7 @@ import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from py_virtual_gpu import VirtualGPU
+from py_virtual_gpu import VirtualGPU, syncthreads
 from py_virtual_gpu.services import get_gpu_manager
 from py_virtual_gpu.api.server import start_background_api
 from py_virtual_gpu.kernel import kernel
@@ -18,14 +18,13 @@ def reduce_partial_kernel(threadIdx, blockIdx, blockDim, gridDim,
                           in_ptr, partial_ptr, n):
     ctx = get_current_thread()
     shared_mem = ctx.shared_mem
-    barrier = ctx.barrier
     tx = threadIdx[0]
     idx = blockIdx[0] * blockDim[0] + tx
     if idx < n:
         shared_mem.write(tx * 4, in_ptr[idx])
     else:
         shared_mem.write(tx * 4, (0).to_bytes(4, "little", signed=True))
-    barrier.wait()
+    syncthreads()
 
     stride = blockDim[0] // 2
     while stride > 0:
@@ -33,7 +32,7 @@ def reduce_partial_kernel(threadIdx, blockIdx, blockDim, gridDim,
             a = int.from_bytes(shared_mem.read(tx * 4, 4), "little", signed=True)
             b = int.from_bytes(shared_mem.read((tx + stride) * 4, 4), "little", signed=True)
             shared_mem.write(tx * 4, (a + b).to_bytes(4, "little", signed=True))
-        barrier.wait()
+        syncthreads()
         stride //= 2
 
     if tx == 0:
@@ -45,13 +44,12 @@ def final_reduce_kernel(threadIdx, blockIdx, blockDim, gridDim,
                         partial_ptr, out_ptr, num_partials):
     ctx = get_current_thread()
     shared_mem = ctx.shared_mem
-    barrier = ctx.barrier
     tx = threadIdx[0]
     if tx < num_partials:
         shared_mem.write(tx * 4, partial_ptr[tx])
     else:
         shared_mem.write(tx * 4, (0).to_bytes(4, "little", signed=True))
-    barrier.wait()
+    syncthreads()
 
     stride = blockDim[0] // 2
     while stride > 0:
@@ -59,7 +57,7 @@ def final_reduce_kernel(threadIdx, blockIdx, blockDim, gridDim,
             a = int.from_bytes(shared_mem.read(tx * 4, 4), "little", signed=True)
             b = int.from_bytes(shared_mem.read((tx + stride) * 4, 4), "little", signed=True)
             shared_mem.write(tx * 4, (a + b).to_bytes(4, "little", signed=True))
-        barrier.wait()
+        syncthreads()
         stride //= 2
 
     if tx == 0:

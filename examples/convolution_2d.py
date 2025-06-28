@@ -3,7 +3,7 @@ import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from py_virtual_gpu import VirtualGPU
+from py_virtual_gpu import VirtualGPU, syncthreads
 from py_virtual_gpu.services import get_gpu_manager
 from py_virtual_gpu.api.server import start_background_api
 from py_virtual_gpu.kernel import kernel
@@ -15,13 +15,12 @@ def conv2d_kernel(threadIdx, blockIdx, blockDim, gridDim,
                   in_ptr, out_ptr, width, height):
     ctx = get_current_thread()
     shared_mem = ctx.shared_mem
-    barrier = ctx.barrier
     tx, ty, _ = threadIdx
     idx = ty * width + tx
     # load element to shared memory
     val = int.from_bytes(in_ptr[idx], "little", signed=True)
     shared_mem.write(idx * 4, val.to_bytes(4, "little", signed=True))
-    barrier.wait()
+    syncthreads()
 
     if 0 < tx < width - 1 and 0 < ty < height - 1:
         acc = 0
