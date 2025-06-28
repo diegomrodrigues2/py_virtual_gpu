@@ -1,17 +1,12 @@
 from __future__ import annotations
 
-from multiprocessing import Lock, Manager
+from multiprocessing import Lock
 from typing import Any
 
 from .thread import get_current_thread
 
 __all__ = ["shfl_sync", "ballot_sync"]
 
-# Shared dictionaries keyed by Barrier instances used by the threads. Each entry
-# is cleared once all threads of the warp have read the result.
-_manager = Manager()
-_shfl_values = _manager.dict()  # type: ignore[var-annotated]
-_ballot_values = _manager.dict()  # type: ignore[var-annotated]
 _lock = Lock()
 
 
@@ -29,20 +24,16 @@ def shfl_sync(value: Any, src_lane: int) -> Any:
     if barrier is None:
         raise RuntimeError("shfl_sync() requires a barrier reference")
 
-    key = id(barrier)
+    buf = getattr(thread, "warp_buffer", None)
+    if buf is None:
+        raise RuntimeError("shfl_sync() requires a warp_buffer reference")
     lane = thread.thread_idx[0]
     with _lock:
-        if key not in _shfl_values:
-            _shfl_values[key] = _manager.dict()  # type: ignore[index]
-        buf = _shfl_values[key]
         buf[lane] = value
     barrier.wait()
     with _lock:
-        result = _shfl_values[key].get(src_lane)
+        result = buf[src_lane]
     barrier.wait()
-    if lane == 0:
-        with _lock:
-            _shfl_values.pop(key, None)
     return result
 
 
@@ -55,21 +46,20 @@ def ballot_sync(predicate: bool) -> int:
     if barrier is None:
         raise RuntimeError("ballot_sync() requires a barrier reference")
 
-    key = id(barrier)
+    buf = getattr(thread, "warp_buffer", None)
+    if buf is None:
+        raise RuntimeError("ballot_sync() requires a warp_buffer reference")
     lane = thread.thread_idx[0]
     with _lock:
-        if key not in _ballot_values:
-            _ballot_values[key] = _manager.dict()  # type: ignore[index]
-        buf = _ballot_values[key]
-        buf[lane] = bool(predicate)
+        buf[lane] = 1 if predicate else 0
     barrier.wait()
     with _lock:
-        mask = 0
-        for l, pred in _ballot_values[key].items():
-            if pred:
-                mask |= 1 << l
+        if lane == 0:
+            mask = 0
+            for i in range(len(buf)):
+                if buf[i]:
+                    mask |= 1 << i
+            buf[0] = mask
     barrier.wait()
-    if lane == 0:
-        with _lock:
-            _ballot_values.pop(key, None)
+    mask = buf[0]
     return mask
