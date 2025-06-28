@@ -5,6 +5,8 @@ import pytest
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from py_virtual_gpu.thread_block import ThreadBlock
+from py_virtual_gpu.sync import syncthreads
+from py_virtual_gpu.errors import SynchronizationError
 
 
 def test_block_initialization_attributes():
@@ -58,7 +60,7 @@ class DummyBarrier:
     def __init__(self) -> None:
         self.calls = 0
 
-    def wait(self) -> None:  # pragma: no cover - simple counter
+    def wait(self, *args, **kwargs) -> None:  # pragma: no cover - simple counter
         self.calls += 1
 
 
@@ -102,3 +104,25 @@ def test_initialize_threads_custom_register_and_local_size():
     for t in tb.threads:
         assert t.registers.size == 8
         assert t.local_mem.size == 16
+
+
+def test_barrier_timeout_raises_synchronization_error():
+    tb = ThreadBlock(
+        (0, 0, 0),
+        (2, 1, 1),
+        (1, 1, 1),
+        shared_mem_size=0,
+        barrier_timeout=0.05,
+    )
+    errors = []
+
+    def kernel(tidx, bidx, bdim, gdim, log):
+        if tidx[0] == 0:
+            return
+        try:
+            syncthreads()
+        except SynchronizationError:
+            log.append(tidx)
+
+    tb.execute(kernel, errors)
+    assert errors == [(1, 0, 0)]

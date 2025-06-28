@@ -70,6 +70,7 @@ class VirtualGPU:
         device_latency_cycles: int = 200,
         device_bandwidth_bpc: int = 32,
         constant_mem_size: int = 64 * 1024,
+        barrier_timeout: float | None = None,
     ) -> None:
         """Initialize the virtual device with ``num_sms`` SMs and global memory.
 
@@ -88,6 +89,9 @@ class VirtualGPU:
         sync_on_launch:
             When ``True`` calls :meth:`synchronize` automatically at the end of
             :meth:`launch_kernel`.
+        barrier_timeout:
+            Maximum time in seconds threads wait on the block barrier before
+            raising :class:`SynchronizationError`.
         """
         self.sms: List[StreamingMultiprocessor] = [
             StreamingMultiprocessor(i, shared_mem_size, 64, parent_gpu=self)
@@ -109,6 +113,7 @@ class VirtualGPU:
         self.constant_memory: ConstantMemory = ConstantMemory(constant_mem_size)
         self.const_memory = self.constant_memory  # backwards compatibility
         self.shared_mem_size: int = shared_mem_size
+        self.barrier_timeout = barrier_timeout
         self.use_pool: bool = use_pool
         self.sync_on_launch: bool = sync_on_launch
         self.next_sm: int = 0
@@ -316,6 +321,7 @@ class VirtualGPU:
                         block_dim=(bx, by, bz),
                         grid_dim=(gx, gy, gz),
                         shared_mem_size=self.shared_mem_size,
+                        barrier_timeout=self.barrier_timeout,
                     )
                     tb.kernel_func = kernel_func
                     tb.kernel_args = args
