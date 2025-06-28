@@ -210,6 +210,7 @@ export const SmCard: React.FC<SmCardProps> = ({ sm, gpuId }) => {
         <StatDisplay label="Warp Divergences" value={sm.warp_divergences} />
         <StatDisplay label="Bank Conflicts" value={sm.bank_conflicts} />
         <StatDisplay label="Non-Coalesced" value={sm.non_coalesced_accesses} />
+        <StatDisplay label="Barrier Wait" value={sm.barrier_wait_ms} unit="ms" />
         {sm.shared_mem_total_kb > 0 && (
           <StatDisplay label="Shared Mem" value={`${sm.shared_mem_usage_kb}/${sm.shared_mem_total_kb}`} unit="KB"/>
         )}

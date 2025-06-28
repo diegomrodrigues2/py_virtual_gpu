@@ -35,6 +35,7 @@ function mapSmState(sm: any): StreamingMultiprocessorState {
     registers_used: undefined,
     registers_total: undefined,
     bank_conflicts: counters.bank_conflicts ?? 0,
+    barrier_wait_ms: counters.barrier_wait_ms ?? 0,
     active_block_idx: undefined,
     status: (sm.status || 'idle') as 'running' | 'idle' | 'waiting' | 'error',
     load_percentage: undefined,

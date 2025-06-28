@@ -126,3 +126,26 @@ def test_barrier_timeout_raises_synchronization_error():
 
     tb.execute(kernel, errors)
     assert errors == [(1, 0, 0)]
+
+
+def test_barrier_wait_time_accumulates(monkeypatch):
+    tb = ThreadBlock((0, 0, 0), (2, 1, 1), (1, 1, 1), shared_mem_size=0)
+    class DummyBarrier:
+        def __init__(self) -> None:
+            self.parties = 2
+            self.calls = 0
+        def wait(self, *a, **k):
+            self.calls += 1
+
+    tb.barrier = DummyBarrier()
+    tb.initialize_threads(lambda *a: None)
+
+    times = iter([0.0, 0.1, 0.2, 0.25])
+    monkeypatch.setattr("py_virtual_gpu.thread_block.perf_counter", lambda: next(times))
+
+    tb.barrier_sync()
+    tb.barrier_sync()
+    assert tb.barrier_wait_time == pytest.approx(0.1)
+    tb.barrier_sync()
+    tb.barrier_sync()
+    assert tb.barrier_wait_time == pytest.approx(0.1 + 0.05)
