@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from multiprocessing import Barrier
-from threading import BrokenBarrierError
+from threading import BrokenBarrierError, Lock
 from typing import Callable, List, Tuple, Any
 from threading import Thread as _PyThread
+from time import perf_counter
 
 from .shared_memory import SharedMemory
 from .errors import SynchronizationError
@@ -50,6 +51,9 @@ class ThreadBlock:
         self.threads: List[Thread] = []
         self._initialized: bool = False
         self.barrier_timeout = barrier_timeout
+        self.barrier_wait_time: float = 0.0
+        self._entry_times: list[float] = []
+        self._barrier_lock = Lock()
 
     # ------------------------------------------------------------------
     # Thread management
@@ -85,6 +89,7 @@ class ThreadBlock:
                     setattr(t, "shared_mem", self.shared_mem)
                     setattr(t, "barrier", self.barrier)
                     setattr(t, "barrier_timeout", self.barrier_timeout)
+                    setattr(t, "block", self)
                     self.threads.append(t)
         self._initialized = True
 
@@ -119,6 +124,14 @@ class ThreadBlock:
         block pauses until the last one reaches the same point, mimicking the
         semantics of ``__syncthreads()`` on a real GPU.
         """
+        timestamp = perf_counter()
+        with self._barrier_lock:
+            self._entry_times.append(timestamp)
+            parties = getattr(self.barrier, "parties", len(self.threads))
+            if len(self._entry_times) == parties:
+                diff = max(self._entry_times) - min(self._entry_times)
+                self.barrier_wait_time += diff
+                self._entry_times.clear()
         try:
             self.barrier.wait(timeout=self.barrier_timeout)
         except BrokenBarrierError as exc:

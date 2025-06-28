@@ -8,6 +8,10 @@ def syncthreads() -> None:
     thread = get_current_thread()
     if thread is None:
         raise RuntimeError("syncthreads() must be called from a GPU thread")
+    block = getattr(thread, "block", None)
+    if block is not None:
+        block.barrier_sync()
+        return
     timeout = getattr(thread, "barrier_timeout", None)
     try:
         thread.barrier.wait(timeout=timeout)

@@ -31,8 +31,9 @@ export interface StreamingMultiprocessorState {
   shared_mem_total_kb: number; 
   registers_used?: number;
   registers_total?: number;
-  bank_conflicts: number; 
-  active_block_idx?: string; 
+  bank_conflicts: number;
+  barrier_wait_ms: number;
+  active_block_idx?: string;
   status: 'running' | 'idle' | 'waiting' | 'error';
   load_percentage?: number; // 0-100
   active_warps?: { id: number; active_threads: number; total_threads: number; pc?: number; status?: string }[];

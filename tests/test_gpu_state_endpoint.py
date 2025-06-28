@@ -35,6 +35,7 @@ def test_state_endpoint_idle():
         for sm in data["sms"]:
             assert sm["status"] == "idle"
             assert sm["counters"]["warps_executed"] == 0
+            assert "barrier_wait_ms" in sm["counters"]
 
 
 @pytest.mark.parametrize("policy", ["sequential", "round_robin"])

@@ -62,6 +62,7 @@ class StreamingMultiprocessor:
             "warp_divergences": 0,
             "non_coalesced_accesses": 0,
             "bank_conflicts": 0,
+            "barrier_wait_ms": 0,
         }
         self.stats: Dict[str, int] = {"extra_cycles": 0}
         self.divergence_log: List[DivergenceEvent] = []
@@ -94,6 +95,7 @@ class StreamingMultiprocessor:
             block.execute(func, *args)
             num_warps = (len(block.threads) + self.warp_size - 1) // self.warp_size
             self.counters["warps_executed"] += num_warps
+            self.counters["barrier_wait_ms"] += int(getattr(block, "barrier_wait_time", 0.0) * 1000)
             if self.gpu is not None:
                 self.gpu._cycle_counter += 1
             idx = getattr(block, "block_idx", (0, 0, 0))
@@ -118,6 +120,7 @@ class StreamingMultiprocessor:
         else:
             self.dispatch()
 
+        self.counters["barrier_wait_ms"] += int(getattr(block, "barrier_wait_time", 0.0) * 1000)
         if self.gpu is not None:
             self.gpu._cycle_counter += 1
         idx = getattr(block, "block_idx", (0, 0, 0))
