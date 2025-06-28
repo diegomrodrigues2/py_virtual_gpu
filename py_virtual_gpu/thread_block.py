@@ -120,6 +120,17 @@ class ThreadBlock:
             environments where process forking is undesirable.
         """
         self.initialize_threads(kernel_func, *args)
+        if not use_threads:
+            # Spawn start method (used on Windows) requires all arguments to be
+            # picklable. Kernel functions defined interactively often are not,
+            # leading to ``PicklingError``. In that case we fall back to using
+            # ``threading.Thread`` which works regardless of picklability and
+            # preserves behaviour on platforms without ``fork``.
+            import multiprocessing as _mp
+
+            if _mp.get_start_method(allow_none=True) == "spawn":
+                use_threads = True
+
         Worker = _PyThread if use_threads else Process
         workers: List[Worker] = []
         for t in self.threads:
