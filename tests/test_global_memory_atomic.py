@@ -3,6 +3,7 @@ import sys
 import multiprocessing as mp
 from unittest.mock import MagicMock
 import pytest
+import struct
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -80,3 +81,21 @@ def test_atomic_wrappers_through_virtualgpu():
     swapped = atomicCAS(ptr, 3, 5)
     assert swapped is True
     assert int.from_bytes(gpu.global_mem.read(ptr.offset, 4), "little", signed=True) == 5
+
+
+def test_atomic_add_float32():
+    gm = GlobalMemory(4)
+    gm.write(0, struct.pack("<f", 1.5))
+    old = gm.atomic_add_float32(0, 2.25)
+    assert old == pytest.approx(1.5)
+    result = struct.unpack("<f", gm.read(0, 4))[0]
+    assert result == pytest.approx(3.75)
+
+
+def test_atomic_add_float64():
+    gm = GlobalMemory(8)
+    gm.write(0, struct.pack("<d", 1.5))
+    old = gm.atomic_add_float64(0, 2.25)
+    assert old == pytest.approx(1.5)
+    result = struct.unpack("<d", gm.read(0, 8))[0]
+    assert result == pytest.approx(3.75)
