@@ -212,3 +212,53 @@ def mascaras(threadIdx, blockIdx, blockDim, gridDim, out):
     m = ballot_sync(threadIdx[0] % 2 == 0)
     out[threadIdx[0]] = m
 ```
+
+## Sincronização com Barreiras
+
+O método ``syncthreads()`` expõe a barreira compartilhada do ``ThreadBlock``.
+Todas as threads devem alcançar a chamada para que a execução continue. Se
+apenas parte delas executa ``syncthreads()``, o bloco entra em *deadlock*.
+Isso costuma acontecer quando há **divergência de warp** dentro de um ramo
+condicional. Sempre garanta que as rotas de código reconvergem antes da
+barreira ou mova a sincronização para fora do trecho divergente.
+
+### Reduções e Scans
+
+Operações de redução e de *scan* são exemplos clássicos que intercalam
+escritas na ``SharedMemory`` com barreiras. O trecho abaixo mostra o padrão
+de uma soma reduzida por bloco:
+
+```python
+from py_virtual_gpu import kernel, syncthreads
+from py_virtual_gpu.thread import get_current_thread
+
+@kernel(grid_dim=(1,1,1), block_dim=(8,1,1))
+def reduce_sum(threadIdx, blockIdx, blockDim, gridDim, data):
+    tx = threadIdx[0]
+    shared = get_current_thread().shared_mem
+    shared.write(tx * 4, data[tx])
+    syncthreads()
+
+    stride = blockDim[0] // 2
+    while stride > 0:
+        if tx < stride:
+            a = int.from_bytes(shared.read(tx * 4, 4), "little")
+            b = int.from_bytes(shared.read((tx + stride) * 4, 4), "little")
+            shared.write(tx * 4, (a + b).to_bytes(4, "little"))
+        syncthreads()
+        stride //= 2
+```
+
+Um *scan* (prefix sum) segue lógica semelhante: cada iteração lê valores da
+posição anterior, escreve o resultado e sincroniza para que todos observem os
+intermediários antes do próximo passo.
+
+### Atômicos ou Barreiras?
+
+Use operações atômicas quando múltiplas threads precisam atualizar o mesmo
+endereço de forma independente, como ao incrementar um contador global. Quando
+os valores são acumulados cooperativamente em ``SharedMemory`` é preferível
+empregar ``syncthreads()`` para sincronizar cada etapa. Caso os resultados
+precisem ser visíveis além do bloco, utilize também ``threadfence_block()``,
+``threadfence()`` ou ``threadfence_system()`` conforme o escopo de memória
+necessário.
