@@ -84,6 +84,21 @@ def vec_mul(threadIdx, blockIdx, blockDim, gridDim, a_ptr, b_ptr, out_ptr):
 - A classe `SharedMemory` expõe operações atômicas (`atomic_add`, `atomic_sub`,
   `atomic_cas`, `atomic_max`, `atomic_min`, `atomic_exchange`) que permitem
   atualização segura de valores compartilhados entre threads.
+
+## Fences de Memória
+
+Três funções simulam as barreiras de memória do CUDA para controlar a
+visibilidade de escritas:
+
+- `threadfence_block()` garante que dados gravados na `SharedMemory` do bloco
+  fiquem visíveis aos demais threads do mesmo block após o fence.
+- `threadfence()` propaga atualizações para todas as memórias acessíveis dentro
+  do dispositivo, cobrindo tanto a `SharedMemory` quanto a `GlobalMemory`.
+- `threadfence_system()` estende o efeito para que a aplicação hospedeira possa
+  observar as escritas; na simulação ele é equivalente a `threadfence()`.
+
+Em todos os casos essas funções apenas adquirem e liberam os locks das
+respectivas memórias para emular o efeito de ordenação.
 ## Operações Atômicas
 
 A biblioteca também fornece *helpers* de alto nível para realizar operações atômicas diretamente sobre ``DevicePointer`` na ``GlobalMemory``. As funções ``atomicAdd``, ``atomicSub``, ``atomicCAS``, ``atomicMax``, ``atomicMin`` e ``atomicExchange`` recebem o ponteiro e o valor desejado, retornando o valor anterior.

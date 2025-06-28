@@ -7,6 +7,7 @@ from .streaming_multiprocessor import StreamingMultiprocessor, DivergenceEvent
 from .thread_block import ThreadBlock
 from .warp import Warp, is_coalesced
 from .sync import syncthreads
+from .fence import threadfence_block, threadfence, threadfence_system
 from .dispatch import Instruction, SIMTStack
 from .transfer import TransferEvent
 from .atomics import (
@@ -63,5 +64,8 @@ __all__ = [
     "atomicMin",
     "atomicExchange",
     "syncthreads",
+    "threadfence_block",
+    "threadfence",
+    "threadfence_system",
 ]
 
