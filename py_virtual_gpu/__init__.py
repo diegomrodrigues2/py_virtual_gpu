@@ -10,6 +10,7 @@ from .sync import syncthreads
 from .fence import threadfence_block, threadfence, threadfence_system
 from .dispatch import Instruction, SIMTStack
 from .transfer import TransferEvent
+from .errors import SynchronizationError
 from .atomics import (
     atomicAdd,
     atomicSub,
@@ -57,6 +58,7 @@ __all__ = [
     "HostMemory",
     "TransferEvent",
     "KernelLaunchEvent",
+    "SynchronizationError",
     "atomicAdd",
     "atomicSub",
     "atomicCAS",

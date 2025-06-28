@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from multiprocessing import Barrier
+from threading import BrokenBarrierError
 from typing import Callable, List, Tuple, Any
 from threading import Thread as _PyThread
 
 from .shared_memory import SharedMemory
+from .errors import SynchronizationError
 from .thread import Thread
 
 
@@ -17,6 +19,8 @@ class ThreadBlock:
         block_dim: Tuple[int, int, int],
         grid_dim: Tuple[int, int, int],
         shared_mem_size: int,
+        *,
+        barrier_timeout: float | None = None,
     ) -> None:
         """Create a ``ThreadBlock`` instance.
 
@@ -26,6 +30,9 @@ class ThreadBlock:
             Identify the block within the grid and its dimensions.
         shared_mem_size:
             Size in bytes of the block's :class:`SharedMemory`.
+        barrier_timeout:
+            Maximum time in seconds threads will wait on the barrier before
+            raising :class:`SynchronizationError`.
 
         Notes
         -----
@@ -42,6 +49,7 @@ class ThreadBlock:
         self.barrier: Barrier = Barrier(parties=total_threads)
         self.threads: List[Thread] = []
         self._initialized: bool = False
+        self.barrier_timeout = barrier_timeout
 
     # ------------------------------------------------------------------
     # Thread management
@@ -76,6 +84,7 @@ class ThreadBlock:
                     setattr(t, "grid_dim", self.grid_dim)
                     setattr(t, "shared_mem", self.shared_mem)
                     setattr(t, "barrier", self.barrier)
+                    setattr(t, "barrier_timeout", self.barrier_timeout)
                     self.threads.append(t)
         self._initialized = True
 
@@ -110,7 +119,10 @@ class ThreadBlock:
         block pauses until the last one reaches the same point, mimicking the
         semantics of ``__syncthreads()`` on a real GPU.
         """
-        self.barrier.wait()
+        try:
+            self.barrier.wait(timeout=self.barrier_timeout)
+        except BrokenBarrierError as exc:
+            raise SynchronizationError("Barrier wait timed out") from exc
 
     def __repr__(self) -> str:  # pragma: no cover - debugging helper
         return (
