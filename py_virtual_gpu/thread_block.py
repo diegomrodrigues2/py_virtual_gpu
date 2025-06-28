@@ -8,6 +8,7 @@ from multiprocessing import Lock
 from typing import Callable, List, Tuple, Any
 from threading import Thread as _PyThread
 from time import perf_counter
+import platform
 
 from .shared_memory import SharedMemory
 from .errors import SynchronizationError
@@ -118,19 +119,16 @@ class ThreadBlock:
             When ``True`` use ``threading.Thread`` instead of
             ``multiprocessing.Process``. This provides a fallback for
             environments where process forking is undesirable.
+            On Windows, this is automatically set to ``True`` to avoid
+            pickling issues.
         """
         self.initialize_threads(kernel_func, *args)
-        if not use_threads:
-            # Spawn start method (used on Windows) requires all arguments to be
-            # picklable. Kernel functions defined interactively often are not,
-            # leading to ``PicklingError``. In that case we fall back to using
-            # ``threading.Thread`` which works regardless of picklability and
-            # preserves behaviour on platforms without ``fork``.
-            import multiprocessing as _mp
-
-            if _mp.get_start_method(allow_none=True) == "spawn":
-                use_threads = True
-
+        
+        # On Windows, automatically use threads to avoid pickling issues
+        # with kernel functions that can't be properly serialized
+        if platform.system() == "Windows":
+            use_threads = True
+            
         Worker = _PyThread if use_threads else Process
         workers: List[Worker] = []
         for t in self.threads:
