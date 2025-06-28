@@ -4,6 +4,15 @@ from __future__ import annotations
 
 from typing import Any, Callable, Dict, Tuple
 from multiprocessing import Barrier
+from threading import local
+
+_tls = local()
+
+
+def get_current_thread() -> "Thread | None":
+    """Return the thread currently executing a kernel, if any."""
+
+    return getattr(_tls, "current", None)
 
 from .shared_memory import SharedMemory
 from .global_memory import GlobalMemory
@@ -152,7 +161,11 @@ class Thread:
         self.blockDim = blockDim
         self.gridDim = gridDim
 
-        return kernel_func(threadIdx, blockIdx, blockDim, gridDim, *user_args, **kwargs)
+        _tls.current = self
+        try:
+            return kernel_func(threadIdx, blockIdx, blockDim, gridDim, *user_args, **kwargs)
+        finally:
+            _tls.current = None
 
     # ------------------------------------------------------------------
     # Representation helpers
@@ -166,4 +179,4 @@ class Thread:
         )
 
 
-__all__ = ["RegisterMemory", "Thread"]
+__all__ = ["RegisterMemory", "Thread", "get_current_thread"]
