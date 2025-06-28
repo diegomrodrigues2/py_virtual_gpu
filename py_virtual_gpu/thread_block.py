@@ -114,6 +114,9 @@ class ThreadBlock:
             environments where process forking is undesirable.
         """
         self.initialize_threads(kernel_func, *args)
+        # Ensure warp utilities are ready before spawning processes
+        from . import warp_utils
+        warp_utils._ensure_manager()
         Worker = _PyThread if use_threads else Process
         workers: List[Worker] = []
         for t in self.threads:
