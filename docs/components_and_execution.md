@@ -185,3 +185,30 @@ def exemplo(threadIdx, blockIdx, blockDim, gridDim):
     thread.local_mem.write(off, b"data")
     valor = thread.local_mem.read(off, 4)
 ```
+
+## Operações de Warp
+
+Duas funções auxiliam a troca de informações entre as threads de um mesmo warp.
+Elas utilizam a barreira compartilhada do bloco para orquestrar a sincronização.
+
+- ``shfl_sync(valor, src_lane)`` devolve o valor fornecido pela lane
+  ``src_lane`` para todas as threads:
+
+```python
+from py_virtual_gpu import kernel, shfl_sync
+
+@kernel(grid_dim=(1,1,1), block_dim=(4,1,1))
+def copia_primeira(threadIdx, blockIdx, blockDim, gridDim, out):
+    v = threadIdx[0]
+    out[threadIdx[0]] = shfl_sync(v, 0)
+```
+
+- ``ballot_sync(predicado)`` reúne um predicado de cada lane e retorna uma
+  máscara de bits onde cada posição representa o resultado de uma thread:
+
+```python
+@kernel(grid_dim=(1,1,1), block_dim=(4,1,1))
+def mascaras(threadIdx, blockIdx, blockDim, gridDim, out):
+    m = ballot_sync(threadIdx[0] % 2 == 0)
+    out[threadIdx[0]] = m
+```
