@@ -1,7 +1,9 @@
 import os
 import sys
 import multiprocessing as mp
+import struct
 from unittest.mock import MagicMock
+import pytest
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -63,3 +65,21 @@ def test_atomic_methods_use_lock():
     sm.atomic_cas(0, 0, 1)
     assert mock_lock.__enter__.call_count == 4
     assert mock_lock.__exit__.call_count == 4
+
+
+def test_atomic_add_float32():
+    sm = SharedMemory(4)
+    sm.write(0, struct.pack("<f", 1.5))
+    old = sm.atomic_add_float32(0, 2.25)
+    assert old == pytest.approx(1.5)
+    result = struct.unpack("<f", sm.read(0, 4))[0]
+    assert result == pytest.approx(3.75)
+
+
+def test_atomic_add_float64():
+    sm = SharedMemory(8)
+    sm.write(0, struct.pack("<d", 1.5))
+    old = sm.atomic_add_float64(0, 2.25)
+    assert old == pytest.approx(1.5)
+    result = struct.unpack("<d", sm.read(0, 8))[0]
+    assert result == pytest.approx(3.75)

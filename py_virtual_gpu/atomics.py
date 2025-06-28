@@ -13,6 +13,24 @@ def atomicAdd(ptr: DevicePointer, value: int, num_bytes: int = 4) -> int:
     return gpu.global_mem.atomic_add(ptr.offset, value, num_bytes)
 
 
+def atomicAdd_float32(ptr: DevicePointer, value: float) -> float:
+    """Atomically add ``value`` to a 32-bit float at ``ptr``."""
+
+    if not isinstance(ptr, DevicePointer):
+        raise TypeError("ptr must be a DevicePointer")
+    gpu = VirtualGPU.get_current()
+    return gpu.global_mem.atomic_add_float32(ptr.offset, value)
+
+
+def atomicAdd_float64(ptr: DevicePointer, value: float) -> float:
+    """Atomically add ``value`` to a 64-bit float at ``ptr``."""
+
+    if not isinstance(ptr, DevicePointer):
+        raise TypeError("ptr must be a DevicePointer")
+    gpu = VirtualGPU.get_current()
+    return gpu.global_mem.atomic_add_float64(ptr.offset, value)
+
+
 def atomicSub(ptr: DevicePointer, value: int, num_bytes: int = 4) -> int:
     """Atomically subtract ``value`` from integer at ``ptr``."""
 
@@ -60,6 +78,8 @@ def atomicExchange(ptr: DevicePointer, value: int, num_bytes: int = 4) -> int:
 
 __all__ = [
     "atomicAdd",
+    "atomicAdd_float32",
+    "atomicAdd_float64",
     "atomicSub",
     "atomicCAS",
     "atomicMax",

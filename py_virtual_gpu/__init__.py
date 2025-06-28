@@ -15,6 +15,8 @@ from .transfer import TransferEvent
 from .errors import SynchronizationError
 from .atomics import (
     atomicAdd,
+    atomicAdd_float32,
+    atomicAdd_float64,
     atomicSub,
     atomicCAS,
     atomicMax,
@@ -62,6 +64,8 @@ __all__ = [
     "KernelLaunchEvent",
     "SynchronizationError",
     "atomicAdd",
+    "atomicAdd_float32",
+    "atomicAdd_float64",
     "atomicSub",
     "atomicCAS",
     "atomicMax",

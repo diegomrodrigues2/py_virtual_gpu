@@ -5,6 +5,7 @@ from __future__ import annotations
 from multiprocessing import Array, Lock
 from ctypes import c_byte
 from collections import Counter
+import struct
 
 
 class SharedMemory:
@@ -63,6 +64,30 @@ class SharedMemory:
             self.buffer[offset : offset + num_bytes] = new.to_bytes(
                 num_bytes, byteorder="little", signed=True
             )
+            return old
+
+    def atomic_add_float32(self, offset: int, value: float) -> float:
+        """Atomically add ``value`` to a 32-bit float at ``offset``."""
+
+        if offset < 0 or offset + 4 > self.size:
+            raise IndexError("SharedMemory atomic out of bounds")
+        with self.lock:
+            raw = memoryview(self.buffer)[offset : offset + 4].tobytes()
+            old = struct.unpack("<f", raw)[0]
+            new = old + value
+            self.buffer[offset : offset + 4] = struct.pack("<f", new)
+            return old
+
+    def atomic_add_float64(self, offset: int, value: float) -> float:
+        """Atomically add ``value`` to a 64-bit float at ``offset``."""
+
+        if offset < 0 or offset + 8 > self.size:
+            raise IndexError("SharedMemory atomic out of bounds")
+        with self.lock:
+            raw = memoryview(self.buffer)[offset : offset + 8].tobytes()
+            old = struct.unpack("<d", raw)[0]
+            new = old + value
+            self.buffer[offset : offset + 8] = struct.pack("<d", new)
             return old
 
     def atomic_sub(self, offset: int, value: int, num_bytes: int = 4) -> int:
