@@ -6,14 +6,19 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 from py_virtual_gpu import VirtualGPU
 from py_virtual_gpu.services import get_gpu_manager
 from py_virtual_gpu.api.server import start_background_api
-from py_virtual_gpu.thread_block import ThreadBlock
+from py_virtual_gpu.kernel import kernel
+from py_virtual_gpu.thread import get_current_thread
 
 
 # ---------------------------------------------------------------------------
 # Kernels
 # ---------------------------------------------------------------------------
+@kernel
 def reduce_partial_kernel(threadIdx, blockIdx, blockDim, gridDim,
-                          in_ptr, partial_ptr, shared_mem, barrier, n):
+                          in_ptr, partial_ptr, n):
+    ctx = get_current_thread()
+    shared_mem = ctx.shared_mem
+    barrier = ctx.barrier
     tx = threadIdx[0]
     idx = blockIdx[0] * blockDim[0] + tx
     if idx < n:
@@ -35,8 +40,12 @@ def reduce_partial_kernel(threadIdx, blockIdx, blockDim, gridDim,
         partial_ptr[blockIdx[0]] = shared_mem.read(0, 4)
 
 
+@kernel
 def final_reduce_kernel(threadIdx, blockIdx, blockDim, gridDim,
-                        partial_ptr, out_ptr, shared_mem, barrier, num_partials):
+                        partial_ptr, out_ptr, num_partials):
+    ctx = get_current_thread()
+    shared_mem = ctx.shared_mem
+    barrier = ctx.barrier
     tx = threadIdx[0]
     if tx < num_partials:
         shared_mem.write(tx * 4, partial_ptr[tx])
@@ -76,7 +85,14 @@ def main(with_api: bool = False) -> None:
     else:
         api_thread = stop_api = None
 
-    gpu = VirtualGPU(num_sms=0, global_mem_size=512)
+    grid_dim = (4, 1, 1)
+    block_dim = (8, 1, 1)
+
+    gpu = VirtualGPU(
+        num_sms=0,
+        global_mem_size=512,
+        shared_mem_size=block_dim[0] * 4,
+    )
     get_gpu_manager().add_gpu(gpu)
     VirtualGPU.set_current(gpu)
 
@@ -90,23 +106,25 @@ def main(with_api: bool = False) -> None:
 
     gpu.memcpy_host_to_device(in_bytes, in_ptr)
 
-    grid_dim = (4, 1, 1)
-    block_dim = (8, 1, 1)
-
     # Stage 1: compute partial sums
-    for bx in range(grid_dim[0]):
-        tb = ThreadBlock((bx, 0, 0), block_dim, grid_dim, shared_mem_size=block_dim[0] * 4)
-        tb.initialize_threads(reduce_partial_kernel)
-        for t in tb.threads:
-            setattr(t, "global_mem", gpu.global_memory)
-        tb.execute(reduce_partial_kernel, in_ptr, partial_ptr, tb.shared_mem, tb.barrier, n)
+    reduce_partial_kernel(
+        in_ptr,
+        partial_ptr,
+        n,
+        grid_dim=grid_dim,
+        block_dim=block_dim,
+    )
+    gpu.synchronize()
 
     # Stage 2: reduce partial sums
-    tb_final = ThreadBlock((0, 0, 0), block_dim, (1, 1, 1), shared_mem_size=block_dim[0] * 4)
-    tb_final.initialize_threads(final_reduce_kernel)
-    for t in tb_final.threads:
-        setattr(t, "global_mem", gpu.global_memory)
-    tb_final.execute(final_reduce_kernel, partial_ptr, out_ptr, tb_final.shared_mem, tb_final.barrier, grid_dim[0])
+    final_reduce_kernel(
+        partial_ptr,
+        out_ptr,
+        grid_dim[0],
+        grid_dim=(1, 1, 1),
+        block_dim=block_dim,
+    )
+    gpu.synchronize()
 
     out = gpu.memcpy_device_to_host(out_ptr, 4)
     result = int.from_bytes(out, "little", signed=True)

@@ -6,12 +6,16 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 from py_virtual_gpu import VirtualGPU
 from py_virtual_gpu.services import get_gpu_manager
 from py_virtual_gpu.api.server import start_background_api
-from py_virtual_gpu.thread_block import ThreadBlock
+from py_virtual_gpu.kernel import kernel
+from py_virtual_gpu.thread import get_current_thread
 
 
+@kernel
 def conv2d_kernel(threadIdx, blockIdx, blockDim, gridDim,
-                  in_ptr, out_ptr, width, height,
-                  shared_mem, barrier):
+                  in_ptr, out_ptr, width, height):
+    ctx = get_current_thread()
+    shared_mem = ctx.shared_mem
+    barrier = ctx.barrier
     tx, ty, _ = threadIdx
     idx = ty * width + tx
     # load element to shared memory
@@ -58,7 +62,11 @@ def main(with_api: bool = False) -> None:
         api_thread = stop_api = None
 
     width = height = 4
-    gpu = VirtualGPU(num_sms=0, global_mem_size=256)
+    gpu = VirtualGPU(
+        num_sms=0,
+        global_mem_size=256,
+        shared_mem_size=width * height * 4,
+    )
     get_gpu_manager().add_gpu(gpu)
     VirtualGPU.set_current(gpu)
 
@@ -82,12 +90,15 @@ def main(with_api: bool = False) -> None:
     out_ptr = gpu.malloc(len(in_bytes))
     gpu.memcpy_host_to_device(in_bytes, in_ptr)
 
-    tb = ThreadBlock((0, 0, 0), (width, height, 1), (1, 1, 1), shared_mem_size=len(in_bytes))
-    tb.initialize_threads(conv2d_kernel)
-    for t in tb.threads:
-        setattr(t, "global_mem", gpu.global_memory)
-        setattr(t, "const_mem", gpu.const_memory)
-    tb.execute(conv2d_kernel, in_ptr, out_ptr, width, height, tb.shared_mem, tb.barrier)
+    conv2d_kernel(
+        in_ptr,
+        out_ptr,
+        width,
+        height,
+        grid_dim=(1, 1, 1),
+        block_dim=(width, height, 1),
+    )
+    gpu.synchronize()
 
     out = gpu.memcpy_device_to_host(out_ptr, len(in_bytes))
     result = [int.from_bytes(out[i * 4:(i + 1) * 4], "little", signed=True) for i in range(width * height)]

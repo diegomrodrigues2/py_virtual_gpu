@@ -6,10 +6,15 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 from py_virtual_gpu import VirtualGPU
 from py_virtual_gpu.services import get_gpu_manager
 from py_virtual_gpu.api.server import start_background_api
-from py_virtual_gpu.thread_block import ThreadBlock
+from py_virtual_gpu.kernel import kernel
+from py_virtual_gpu.thread import get_current_thread
 
 
-def reduce_sum_kernel(threadIdx, blockIdx, blockDim, gridDim, in_ptr, out_ptr, shared_mem, barrier):
+@kernel
+def reduce_sum_kernel(threadIdx, blockIdx, blockDim, gridDim, in_ptr, out_ptr):
+    ctx = get_current_thread()
+    shared_mem = ctx.shared_mem
+    barrier = ctx.barrier
     tx = threadIdx[0]
     shared_mem.write(tx * 4, in_ptr[tx])
     barrier.wait()
@@ -40,11 +45,10 @@ def main(with_api: bool = False) -> None:
     else:
         api_thread = stop_api = None
 
-    gpu = VirtualGPU(num_sms=0, global_mem_size=128)
+    values = [1, 2, 3, 4, 5, 6, 7, 8]
+    gpu = VirtualGPU(num_sms=0, global_mem_size=128, shared_mem_size=len(values) * 4)
     get_gpu_manager().add_gpu(gpu)
     VirtualGPU.set_current(gpu)
-
-    values = [1, 2, 3, 4, 5, 6, 7, 8]
     in_bytes = b"".join(v.to_bytes(4, "little", signed=True) for v in values)
 
     in_ptr = gpu.malloc(len(in_bytes))
@@ -52,11 +56,13 @@ def main(with_api: bool = False) -> None:
 
     gpu.memcpy_host_to_device(in_bytes, in_ptr)
 
-    tb = ThreadBlock((0, 0, 0), (8, 1, 1), (1, 1, 1), shared_mem_size=len(in_bytes))
-    tb.initialize_threads(reduce_sum_kernel)
-    for t in tb.threads:
-        setattr(t, "global_mem", gpu.global_memory)
-    tb.execute(reduce_sum_kernel, in_ptr, out_ptr, tb.shared_mem, tb.barrier)
+    reduce_sum_kernel(
+        in_ptr,
+        out_ptr,
+        grid_dim=(1, 1, 1),
+        block_dim=(len(values), 1, 1),
+    )
+    gpu.synchronize()
 
     out = gpu.memcpy_device_to_host(out_ptr, 4)
     result = int.from_bytes(out, "little", signed=True)
