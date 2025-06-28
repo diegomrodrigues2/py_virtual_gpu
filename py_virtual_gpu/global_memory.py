@@ -9,7 +9,11 @@ from __future__ import annotations
 
 from multiprocessing import Array, Lock
 from ctypes import c_byte
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Type
+
+import numpy as np
+
+from .types import Numeric
 
 
 class GlobalMemory:
@@ -33,8 +37,15 @@ class GlobalMemory:
     # ------------------------------------------------------------------
     # Allocation helpers
     # ------------------------------------------------------------------
-    def malloc(self, size: int) -> int:
-        """Allocate ``size`` bytes and return the offset inside ``buffer``."""
+    def malloc(self, size: int, *, dtype: Type[Numeric] | None = None) -> int:
+        """Allocate ``size`` elements and return the offset inside ``buffer``.
+
+        If ``dtype`` is provided ``size`` is interpreted as the number of
+        elements of that type.
+        """
+
+        if dtype is not None:
+            size = size * int(np.dtype(dtype.dtype).itemsize)
 
         for idx, (offset, block_size) in enumerate(self._free_list):
             if block_size >= size:
@@ -92,7 +103,8 @@ class GlobalMemory:
 
         off = ptr.offset if hasattr(ptr, "offset") else ptr
         with self.lock:
-            return bytes(self.buffer[off : off + size])
+            view = memoryview(self.buffer)
+            return view[off : off + size].tobytes()
 
     def write(self, ptr: int | "DevicePointer", data: bytes) -> None:
         """Write ``data`` starting at ``ptr``.

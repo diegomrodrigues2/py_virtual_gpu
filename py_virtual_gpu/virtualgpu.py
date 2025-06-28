@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from multiprocessing import Queue, Pool, Barrier
-from typing import List, Any, Tuple, Optional, Callable
+from typing import List, Any, Tuple, Optional, Callable, Type
 from math import ceil
 
 # Placeholder imports for yet-to-be-implemented classes.
@@ -13,6 +13,7 @@ from .streaming_multiprocessor import StreamingMultiprocessor  # type: ignore  #
 from .thread_block import ThreadBlock  # type: ignore  # noqa: F401
 from .memory_hierarchy import HostMemory, ConstantMemory
 from .transfer import TransferEvent
+from .types import Numeric
 from dataclasses import dataclass
 
 
@@ -126,12 +127,23 @@ class VirtualGPU:
         self.stats: dict[str, int] = {"transfer_bytes": 0, "transfer_cycles": 0}
         self._cycle_counter: int = 0
 
-    def malloc(self, size: int) -> DevicePointer:
-        """Allocate ``size`` bytes in global memory and return a :class:`DevicePointer`."""
+    def malloc(
+        self, size: int, *, dtype: Type[Numeric] | None = None
+    ) -> DevicePointer:
+        """Allocate ``size`` elements and return a :class:`DevicePointer`.
 
-        offset = self.global_memory.malloc(size)
+        If ``dtype`` is provided ``size`` is interpreted as the number of
+        elements of that type.
+        """
+
+        offset = self.global_memory.malloc(size, dtype=dtype)
         self._active_ptrs.add(offset)
-        return DevicePointer(offset, memory=self.global_memory)
+        return DevicePointer(offset, memory=self.global_memory, dtype=dtype)
+
+    def malloc_type(self, count: int, dtype: Type[Numeric]) -> DevicePointer:
+        """Convenience wrapper to allocate ``count`` elements of ``dtype``."""
+
+        return self.malloc(count, dtype=dtype)
 
     def free(self, ptr: DevicePointer) -> None:
         """Free a previously allocated :class:`DevicePointer`."""
