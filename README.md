@@ -1,18 +1,18 @@
 # Py Virtual GPU
 
-Simulador em Python de uma arquitetura de GPU para estudos de paralelismo e programacao de kernels. O projeto reproduz de forma conceitual os principais elementos de uma GPU moderna, permitindo experimentar o modelo SIMT sem hardware dedicado.
+This project is a **Python-based GPU simulator** for exploring parallelism and kernel programming. It reproduces the key building blocks of a modern GPU so that the SIMT model can be studied without specialized hardware.
 
-## Componentes Principais
+## Core Components
 
-- **VirtualGPU** – dispositivo que agrega vários `StreamingMultiprocessor`s e a `GlobalMemory`.
-- **StreamingMultiprocessor** – executa `ThreadBlock`s e gerencia `Warp`s.
-- **ThreadBlock** – conjunto de threads com `SharedMemory` e barreira de sincronização.
-- **Thread/Warp** – threads são agrupadas em warps que executam em *lock-step*.
-- **Memórias** – `GlobalMemory` compartilhada por todos os blocks, `SharedMemory` restrita a cada block e `LocalMemory` privada por thread para variáveis grandes e spill de registradores.
+- **VirtualGPU** – device that groups several `StreamingMultiprocessor` instances and the `GlobalMemory`.
+- **StreamingMultiprocessor** – executes `ThreadBlock` objects and manages `Warp`s.
+- **ThreadBlock** – a set of threads with its own `SharedMemory` and a synchronization barrier.
+- **Thread/Warp** – threads are grouped into warps that run in lock-step.
+- **Memories** – `GlobalMemory` shared by all blocks, per-block `SharedMemory` and per-thread `LocalMemory` for large variables and register spill.
 
-Um resumo detalhado das classes está em [docs/class_structure.md](docs/class_structure.md). Para uma descrição do fluxo de execução consulte [docs/components_and_execution.md](docs/components_and_execution.md).
+See [docs/class_structure.md](docs/class_structure.md) for a class overview and [docs/components_and_execution.md](docs/components_and_execution.md) for execution details.
 
-## Visão Geral da Arquitetura
+## Architecture Overview
 
 ```mermaid
 graph TD
@@ -25,34 +25,29 @@ graph TD
     TB1 --> T1[Thread]
 ```
 
-O `VirtualGPU` distribui blocks para os SMs, que por sua vez instanciam warps e threads para executar o kernel.
+The `VirtualGPU` distributes blocks to the SMs which in turn spawn warps and threads to run a kernel.
 
-## Hierarquia de Memória
+## Memory Hierarchy
 
-Registradores, `SharedMemory`, `LocalMemory`, `ConstantMemory` e `GlobalMemory` são modelados com latências conceituais. Dados constantes podem ser carregados com `gpu.set_constant`:
+Registers, `SharedMemory`, `LocalMemory`, `ConstantMemory` and `GlobalMemory` are modeled with conceptual latency. Constant values can be loaded with `gpu.set_constant`:
 
 ```python
-gpu.set_constant(b"valores")
+gpu.set_constant(b"values")
 ```
 
+## Features
 
-## Funcionalidades
+- Memory management API (`malloc`, `free`).
+- Host/device copies via `memcpy_host_to_device` and `memcpy_device_to_host`.
+- `@kernel` decorator to run Python functions as kernels.
+- Kernel launch through `launch_kernel` exposing `threadIdx` and `blockIdx`.
+- Constant memory (`64 KiB` by default) available via `gpu = VirtualGPU.get_current(); gpu.read_constant(...)` or `thread.const_mem.read(...)`.
+- `Thread.alloc_local(size)` reserves bytes in `LocalMemory` for large kernel variables.
+- Pointers returned by `malloc` are `DevicePointer` objects that support arithmetic and indexing (`ptr + n`, `ptr[i]`, etc.) similar to CUDA C++.
+- `atomicAdd`, `atomicSub`, `atomicCAS`, `atomicMax`, `atomicMin` and `atomicExchange` operate on `DevicePointer`. The same methods are also available on `SharedMemory` and `GlobalMemory`.
+- Kernel threads run as ``multiprocessing.Process`` to bypass the GIL. Use ``ThreadBlock.execute(..., use_threads=True)`` to fall back to ``threading.Thread`` if processes are not desired.
 
-- API de gerenciamento de memoria (`malloc`, `free`).
-- Copias entre host e dispositivo por `memcpy_host_to_device` e `memcpy_device_to_host`.
-- Decorador `@kernel` que permite executar funcoes Python como kernels.
-- Lançamento de kernel via `launch_kernel` com exposicao de `threadIdx` e `blockIdx`.
-- Memoria constante (`64 KiB` por padrao) acessivel por
-  `gpu = VirtualGPU.get_current(); gpu.read_constant(...)` ou `thread.const_mem.read(...)`.
-- `Thread.alloc_local(size)` permite reservar bytes em `LocalMemory` para variáveis locais grandes do kernel.
-- Ponteiros retornados por `malloc` são objetos `DevicePointer` e agora aceitam
-  aritmética e indexação (`ptr + n`, `ptr[i]`, etc.), imitando a sintaxe do
-  CUDA C++.
-- Funcoes `atomicAdd`, `atomicSub`, `atomicCAS`, `atomicMax`, `atomicMin` e `atomicExchange` realizam operacoes atomicas sobre `DevicePointer`. Os mesmos metodos continuam disponiveis em `SharedMemory` e `GlobalMemory`.
-- As threads do kernel são executadas como ``multiprocessing.Process`` para
-  escapar do GIL. Use ``ThreadBlock.execute(..., use_threads=True)`` para voltar
-  ao modelo de ``threading.Thread`` quando processos não forem desejados.
-### Operacoes Atomicas
+### Atomic Operations
 
 ```python
 from py_virtual_gpu import kernel, atomicAdd
@@ -62,8 +57,7 @@ def incr(threadIdx, blockIdx, blockDim, gridDim, counter_ptr):
     atomicAdd(counter_ptr, 1)
 ```
 
-## Exemplo rapido
-
+## Quick Example
 
 ```python
 from py_virtual_gpu import VirtualGPU, kernel
@@ -75,7 +69,7 @@ VirtualGPU.set_current(gpu)
 def hello(threadIdx, blockIdx, blockDim, gridDim, msg):
     print(threadIdx, blockIdx, msg)
 
-hello("Oi")
+hello("Hi")
 
 ptr = gpu.malloc(8)
 ptr[0] = b"abcd"
@@ -83,29 +77,25 @@ ptr[1] = b"efgh"
 print(ptr[0], ptr[1])
 gpu.free(ptr)
 
-# Leitura de memoria constante
+# Constant memory access
 gpu.set_constant(b"abc")
 print(gpu.read_constant(0, 3))
 ```
 
 ## API
 
-Para iniciar a API execute:
+To start the API run:
 
 ```bash
 pip install -e .[api]
 make dev-api
 ```
 
-
-A documentação Swagger estará disponível em http://localhost:8000/docs.
-Por padrão a aplicação inicializa duas GPUs com quatro SMs cada.
+The Swagger documentation will be available at http://localhost:8000/docs. By default the application starts two GPUs with four SMs each.
 
 ## Running the Examples
 
-Example programs are located in [`examples/`](examples). They can be executed
-directly and optionally started with the API so that the dashboard UI reflects
-their progress.
+Example programs live in [`examples/`](examples). They can be executed directly and optionally started with the API so the dashboard reflects their progress.
 
 ```bash
 # plain execution
@@ -121,24 +111,14 @@ python examples/reduction_sum.py --api
 python examples/reduction_sum_multi.py --api
 ```
 
-When ``--api`` is used the script launches the FastAPI server in the background
-and registers the created GPU with the global manager. You can then run the UI
-from the `app` directory to inspect the execution:
+When ``--api`` is used the script launches the FastAPI server in the background and registers the created GPU with the global manager. You can then run the UI from the `app` directory to inspect execution:
 
 ```bash
 cd app && npm install && npm run dev
 ```
-Node.js and npm must be installed for the dashboard to run. The helper
-``start_background_dashboard`` will raise an error if ``npm`` is not found on
-your ``PATH``. On Windows the helper automatically launches ``npm.cmd`` via
-``cmd.exe`` so the dashboard works the same way as on Unix systems. The helper
-also sets ``VITE_API_BASE_URL`` so the React app talks to the API port you
-specified and chooses a free UI port if necessary.
+Node.js and npm must be installed for the dashboard. The ``start_background_dashboard`` helper raises an error if ``npm`` is not found. On Windows the helper runs ``npm.cmd`` via ``cmd.exe`` so the dashboard behaves the same as on Unix. The helper also sets ``VITE_API_BASE_URL`` so the React app talks to the API port you specified and chooses a free UI port if necessary.
 
-The dashboard makes periodic requests to `/gpus` to list available devices,
-`/gpus/<id>/state` for detailed metrics, `/gpus/<id>/kernel_log` for the kernel launch history and `/events` for the consolidated event feed. If you
-want to confirm the API is responding during an example run you can query these
-endpoints manually using `curl`:
+The dashboard periodically calls `/gpus` to list devices, `/gpus/<id>/state` for metrics, `/gpus/<id>/kernel_log` for the kernel launch history and `/events` for the consolidated event feed. To confirm the API is responding you can query these endpoints manually:
 
 ```bash
 curl http://localhost:8000/gpus
@@ -147,12 +127,11 @@ curl http://localhost:8000/gpus/0/kernel_log
 curl http://localhost:8000/events
 ```
 
-In the dashboard, navigate to a GPU detail page and use the **Show Kernel Log**
-button to toggle a table listing all recorded kernel launches.
+In the dashboard open a GPU detail page and use the **Show Kernel Log** button to toggle the table of recorded launches.
 
 ## Using with Jupyter/REPL
 
-To expose the API while working interactively start it in a background thread:
+Expose the API while working interactively by starting it in a background thread:
 
 ```python
 from py_virtual_gpu.api.server import start_background_api, start_background_dashboard
@@ -161,33 +140,28 @@ api_thread, ui_proc, stop = start_background_dashboard(port=8001)
 # ... interact with the API/UI ...
 stop()
 ```
-This is helpful when running notebooks or experimenting in the Python REPL. The
-``start_background_dashboard`` helper launches both the FastAPI server and the
-React dashboard with a single call. If you only need the API server use
-``start_background_api`` instead.
+This is useful when running notebooks or experimenting in the Python REPL. ``start_background_dashboard`` launches both the FastAPI server and the React dashboard with a single call. If you only need the API server use ``start_background_api`` instead.
 
-## Setup de desenvolvimento
+## Development Setup
 
-Antes de executar a suíte de testes, instale o pacote com as dependências opcionais definidas em `[project.optional-dependencies]` do `pyproject.toml`:
+Before running the test suite install the package with the optional dependencies defined in `[project.optional-dependencies]` of `pyproject.toml`:
 
 ```bash
 pip install -e .[api]
 ```
 
-Em seguida instale os pacotes de desenvolvimento listados em `requirements.txt`:
+Then install the development packages listed in `requirements.txt`:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-Por fim, rode a suíte de testes:
+Finally run the test suite:
 
 ```bash
 pytest
 ```
 
-## Contribuindo
+## Contributing
 
-Consulte [CONTRIBUTING.md](CONTRIBUTING.md) para mais detalhes de como contribuir.
-
-
+See [CONTRIBUTING.md](CONTRIBUTING.md) for details on how to contribute.
