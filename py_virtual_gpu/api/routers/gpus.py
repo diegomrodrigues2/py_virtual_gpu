@@ -90,7 +90,13 @@ def global_mem_slice(
         arr = np.frombuffer(data, dtype=cls.dtype)
         values = [float(cls(v)) for v in arr]
 
-    return MemorySlice(offset=offset, size=len(data), data=data.hex(), values=values)
+    return MemorySlice(
+        offset=offset,
+        size=len(data),
+        dtype=dtype,
+        data=data.hex(),
+        values=values,
+    )
 
 
 @router.get("/gpus/{id}/constant_mem", response_model=MemorySlice)
@@ -122,7 +128,13 @@ def constant_mem_slice(
         arr = np.frombuffer(data, dtype=cls.dtype)
         values = [float(cls(v)) for v in arr]
 
-    return MemorySlice(offset=offset, size=len(data), data=data.hex(), values=values)
+    return MemorySlice(
+        offset=offset,
+        size=len(data),
+        dtype=dtype,
+        data=data.hex(),
+        values=values,
+    )
 
 
 @router.get("/gpus/{id}/kernel_log", response_model=list[KernelLaunchRecord])
