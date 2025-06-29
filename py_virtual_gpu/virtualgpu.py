@@ -33,6 +33,7 @@ class KernelLaunchEvent:
     grid_dim: Tuple[int, int, int]
     block_dim: Tuple[int, int, int]
     start_cycle: int
+    cycles: int = 0
 
 
 class VirtualGPU:
@@ -72,6 +73,7 @@ class VirtualGPU:
         device_bandwidth_bpc: int = 32,
         constant_mem_size: int = 64 * 1024,
         barrier_timeout: float | None = None,
+        preset: str | None = None,
     ) -> None:
         """Initialize the virtual device with ``num_sms`` SMs and global memory.
 
@@ -93,9 +95,24 @@ class VirtualGPU:
         barrier_timeout:
             Maximum time in seconds threads wait on the block barrier before
             raising :class:`SynchronizationError`.
+        preset:
+            Optional GPU model preset (e.g. ``"RTX3080"`` or ``"A100"``) used to
+            configure per-SM operation latencies.
         """
+        sm_kwargs = {}
+        if preset == "RTX3080":
+            sm_kwargs = {"fp16_cycles": 2, "fp32_cycles": 4, "fp64_cycles": 8}
+        elif preset == "A100":
+            sm_kwargs = {"fp16_cycles": 1, "fp32_cycles": 2, "fp64_cycles": 4}
+
         self.sms: List[StreamingMultiprocessor] = [
-            StreamingMultiprocessor(i, shared_mem_size, 64, parent_gpu=self)
+            StreamingMultiprocessor(
+                i,
+                shared_mem_size,
+                64,
+                parent_gpu=self,
+                **sm_kwargs,
+            )
             for i in range(num_sms)
         ]
         self.global_memory: GlobalMemory = GlobalMemory(
@@ -381,6 +398,11 @@ class VirtualGPU:
 
         for sm in self.sms:
             sm.fetch_and_execute()
+
+        end = self.current_cycle()
+        for ev in self.kernel_log:
+            if getattr(ev, "cycles", 0) == 0:
+                ev.cycles = end - ev.start_cycle
 
     def get_memory_stats(self) -> dict[str, int]:
         """Aggregate spill statistics from all launched threads."""
