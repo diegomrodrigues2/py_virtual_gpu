@@ -1,8 +1,16 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
+import { vi } from 'vitest';
 import { DashboardLayout } from '../App';
 import { GPUState, GpuSummary } from '../types/types';
+import * as service from '../services/gpuSimulatorService';
+
+vi.mock('../services/gpuSimulatorService', () => ({
+  fetchAllocations: vi.fn(),
+}));
+
+const mockFetchAllocs = service.fetchAllocations as unknown as ReturnType<typeof vi.fn>;
 
 const gpu: GPUState = {
   id: '0',
@@ -29,6 +37,9 @@ const gpu2: GPUState = { ...gpu, id: '1', name: 'GPU 1' };
 const summary2: GpuSummary = { ...summary, id: '1', name: 'GPU 1' };
 
 describe('DashboardLayout view switching', () => {
+  beforeEach(() => {
+    mockFetchAllocs.mockResolvedValue([]);
+  });
   it('shows cluster view when currentView is cluster', () => {
     render(
       <DashboardLayout
