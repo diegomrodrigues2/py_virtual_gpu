@@ -34,6 +34,7 @@ def test_global_memory_slice_endpoint():
         assert bytes.fromhex(data["data"]) == b"abcdefgh"
         assert data["offset"] == ptr.offset
         assert data["size"] == 8
+        assert data["dtype"] is None
 
 
 def test_constant_memory_slice_endpoint():
@@ -47,6 +48,7 @@ def test_constant_memory_slice_endpoint():
         assert bytes.fromhex(data["data"]) == b"xyz"
         assert data["offset"] == 0
         assert data["size"] == 3
+        assert data["dtype"] is None
 
 
 def test_global_mem_slice_decoding_float32():
@@ -61,6 +63,7 @@ def test_global_mem_slice_decoding_float32():
         assert resp.status_code == 200
         data = resp.json()
         assert data["values"] == [1.5, -2.0]
+        assert data["dtype"] == "float32"
 
 
 def test_constant_mem_slice_decoding_half():
@@ -73,3 +76,4 @@ def test_constant_mem_slice_decoding_half():
         assert resp.status_code == 200
         data = resp.json()
         assert data["values"] == [float(Half(v)) for v in arr]
+        assert data["dtype"] == "half"

@@ -90,7 +90,9 @@ class DevicePointer:
     # ------------------------------------------------------------------
     def __repr__(self) -> str:
         mem_name = type(self.memory).__name__
-        dtype_name = self.dtype.__name__ if self.dtype is not None else None
+        dtype_name = None
+        if self.dtype is not None:
+            dtype_name = getattr(self.dtype, "__name__", str(self.dtype))
         return (
             f"<DevicePointer mem={mem_name} offset={self.offset} "
             f"elem_size={self.element_size} dtype={dtype_name}>"
