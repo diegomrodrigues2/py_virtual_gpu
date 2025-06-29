@@ -137,6 +137,7 @@ class VirtualGPU:
         self.next_sm: int = 0
         self.pool: Optional[Pool] = Pool(processes=num_sms) if self.use_pool else None
         self._active_ptrs: set[int] = set()
+        self.alloc_metadata: dict[int, tuple[int, int, Type[Numeric] | None, str | None]] = {}
         self._launched_blocks: List[ThreadBlock] = []
         self.transfer_log: List[TransferEvent] = []
         self.kernel_log: List[KernelLaunchEvent] = []
@@ -145,7 +146,11 @@ class VirtualGPU:
         self._cycle_counter: int = 0
 
     def malloc(
-        self, size: int, *, dtype: Type[Numeric] | None = None
+        self,
+        size: int,
+        *,
+        dtype: Type[Numeric] | None = None,
+        label: str | None = None,
     ) -> DevicePointer:
         """Allocate ``size`` elements and return a :class:`DevicePointer`.
 
@@ -155,6 +160,7 @@ class VirtualGPU:
 
         offset = self.global_memory.malloc(size, dtype=dtype)
         self._active_ptrs.add(offset)
+        self.alloc_metadata[offset] = (offset, size, dtype, label)
         return DevicePointer(offset, memory=self.global_memory, dtype=dtype)
 
     def malloc_type(self, count: int, dtype: Type[Numeric]) -> DevicePointer:
@@ -171,6 +177,7 @@ class VirtualGPU:
             raise ValueError("Invalid or double free")
         self.global_memory.free(ptr.offset)
         self._active_ptrs.remove(ptr.offset)
+        self.alloc_metadata.pop(ptr.offset, None)
 
     # ------------------------------------------------------------------
     # Data transfer helpers

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class GPUSummary(BaseModel):
@@ -29,6 +29,15 @@ class KernelLaunchRecord(BaseModel):
     block_dim: tuple[int, int, int]
     start_cycle: int
     cycles: int
+
+
+class AllocationRecord(BaseModel):
+    """Information about an active global memory allocation."""
+
+    offset: int
+    size: int
+    dtype: str | None = None
+    label: str | None = None
 
 
 class GlobalMemState(BaseModel):
@@ -65,6 +74,7 @@ class GPUState(BaseModel):
     transfer_log: list[TransferRecord]
     sms: list[SMState]
     overall_load: int
+    allocations: list[AllocationRecord] = Field(default_factory=list)
     temperature: int | None = None
     power_draw_watts: int | None = None
 

@@ -10,6 +10,7 @@ from ..schemas import (
     SMDetailed,
     MemorySlice,
     KernelLaunchRecord,
+    AllocationRecord,
 )
 
 router = APIRouter()
@@ -99,3 +100,12 @@ def kernel_log(
     """Return the kernel launch log for GPU ``id``."""
 
     return manager.get_kernel_log(id)
+
+
+@router.get("/gpus/{id}/allocations", response_model=list[AllocationRecord])
+def gpu_allocations(
+    id: int, manager: GPUManager = Depends(get_gpu_manager)
+) -> list[AllocationRecord]:
+    """Return active memory allocations for GPU ``id``."""
+
+    return manager.get_gpu_allocations(id)
