@@ -10,13 +10,18 @@ vi.mock('../services/gpuSimulatorService', () => ({
   fetchKernelLog: vi.fn(),
   fetchGlobalMemorySlice: vi.fn(),
   fetchConstantMemorySlice: vi.fn(),
+  fetchAllocations: vi.fn(),
 }));
 
 const mockFetch = service.fetchKernelLog as unknown as ReturnType<typeof vi.fn>;
 const mockFetchGlobalSlice = service.fetchGlobalMemorySlice as unknown as ReturnType<typeof vi.fn>;
 const mockFetchConstantSlice = service.fetchConstantMemorySlice as unknown as ReturnType<typeof vi.fn>;
+const mockFetchAllocs = service.fetchAllocations as unknown as ReturnType<typeof vi.fn>;
 
 describe('GpuDetailView', () => {
+  beforeEach(() => {
+    mockFetchAllocs.mockResolvedValue([]);
+  });
   it('shows memory usage and sm cards', () => {
     const gpu: GPUState = {
       id: '0',
@@ -129,6 +134,32 @@ describe('GpuDetailView', () => {
 
     await user.click(screen.getByRole('button', { name: /clear/i }));
     expect(screen.queryByText('41')).not.toBeInTheDocument();
+  });
+
+  it('shows allocations and fetches slice when clicked', async () => {
+    const user = userEvent.setup();
+    const gpu: GPUState = {
+      id: '0',
+      name: 'GPU 0',
+      config: { num_sms: 0, global_mem_size: 64, shared_mem_per_sm_kb: 0, registers_per_sm_total: 0 },
+      global_memory: { used: 0, total: 64 },
+      transfers: { H2D: 0, D2H: 0, bytes_transferred: 0 },
+      sms: [],
+      overall_load: 0,
+    };
+
+    const allocs = [ { offset: 0, size: 4, dtype: 'Float32', label: 'buf' } ];
+    const slice: MemorySlice = { offset: 0, size: 4, data: Buffer.from('aa55aa55', 'hex').toString('hex') };
+
+    mockFetchAllocs.mockResolvedValue(allocs);
+    mockFetchGlobalSlice.mockResolvedValue(slice);
+
+    render(<GpuDetailView gpu={gpu} />);
+    expect(await screen.findByText('buf')).toBeInTheDocument();
+
+    await user.click(screen.getByText('buf'));
+    expect(mockFetchGlobalSlice).toHaveBeenCalledWith('0', 0, 4, 'float32');
+    expect((await screen.findAllByText('aa')).length).toBeGreaterThan(0);
   });
 });
 

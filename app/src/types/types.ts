@@ -77,6 +77,13 @@ export interface MemorySlice {
   values?: number[];
 }
 
+export interface AllocationRecord {
+  offset: number;
+  size: number;
+  dtype?: string | null;
+  label?: string | null;
+}
+
 export interface SMDetailed {
   id: number;
   blocks: BlockSummary[];
