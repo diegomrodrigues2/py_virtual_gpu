@@ -15,6 +15,7 @@ Implementation details of these classes and their APIs are addressed in issues *
 **Main methods**
 - `launch_kernel(func, grid_dim, block_dim, *args)`: divides the grid into blocks, schedules them on the SMs and passes the arguments to each thread.
 - `malloc(size) / free(ptr)`: interface for allocating and freeing space in `global_memory`.
+- `malloc(size, dtype)` or `malloc_type(count, dtype)` return typed pointers that handle elements of the given numeric type (`Half`, `Float32`, `Float64`).
 - `memcpy_host_to_device(...)` and `memcpy_device_to_host(...)`: simulate transfers between CPU and GPU.
 
 ## `StreamingMultiprocessor`

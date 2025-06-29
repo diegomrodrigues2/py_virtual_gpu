@@ -54,6 +54,7 @@ gpu.memcpy_host_to_device(b"\x00" * 256, ptr)
 data = gpu.memcpy_device_to_host(ptr, 256)
 ```
 - Pointers returned by `malloc` are instances of `DevicePointer` that support arithmetic and indexing (`ptr + n`, `ptr[i]`, etc.), allowing syntax similar to CUDA C++. Below is a kernel that multiplies vectors using `ptr[i]`:
+- You can pass a numeric type such as `Half`, `Float32` or `Float64` to `malloc` or use `malloc_type(count, dtype)` to obtain typed pointers. Elements read from those pointers return instances of the chosen type and operations between them automatically promote to the wider dtype.
 ```python
 @kernel(grid_dim=(1, 1, 1), block_dim=(4, 1, 1))
 def vec_mul(threadIdx, blockIdx, blockDim, gridDim, a_ptr, b_ptr, out_ptr):
