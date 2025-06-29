@@ -13,6 +13,7 @@ python examples/matrix_mul.py
 python examples/reduction_sum.py
 python examples/reduction_sum_multi.py
 python examples/mixed_precision.py
+python examples/inspect_allocations.py
 ```
 
 Each program allocates memory on the virtual device, launches a kernel and prints
@@ -21,8 +22,9 @@ whether the result computed on the device matches the host computation.
 ### Visualizing via API and UI
 
 All examples accept the ``--api`` flag to start the FastAPI server while they
-run. When the server is active you can launch the dashboard UI from the
-``app`` directory:
+run. The ``inspect_allocations.py`` script also provides ``--dashboard`` to
+launch the UI automatically. When the server is active you can manually start
+the dashboard from the ``app`` directory:
 
 ```bash
 cd app && npm install && npm run dev
@@ -34,6 +36,7 @@ Then run an example with API support enabled:
 python examples/vector_mul.py --api
 python examples/matrix_mul.py --api
 python examples/mixed_precision.py --api
+python examples/inspect_allocations.py --dashboard
 ```
 
 Open ``http://localhost:5173`` to inspect the execution step by step through the
