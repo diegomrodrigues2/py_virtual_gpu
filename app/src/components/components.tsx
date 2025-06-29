@@ -308,7 +308,7 @@ export const EventLog: React.FC<EventLogProps> = ({ events }) => {
         {events.map(event => (
           <div key={event.id} className="mb-2.5 pb-2.5 border-b border-gray-700 last:border-b-0 last:pb-0 last:mb-0">
             <div className="flex justify-between text-xs text-gray-500 mb-0.5">
-              <span>{new Date(event.timestamp).toLocaleTimeString()}</span>
+              <span>{new Date(event.timestamp).toLocaleString()}</span>
               <span className={getEventTypeColor(event.type)}>{event.type}</span>
             </div>
             <p className="text-sm text-gray-200">{event.message}</p>

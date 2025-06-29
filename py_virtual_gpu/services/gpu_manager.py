@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import List
 from dataclasses import asdict
-from datetime import datetime
 from uuid import uuid4
 
 from ..virtualgpu import VirtualGPU
@@ -221,7 +220,10 @@ class GPUManager:
                     item["gpu_id"] = gpu_id
                     item["type"] = "kernel"
                     item["id"] = str(uuid4())
-                    item["timestamp"] = datetime.utcnow().isoformat()
+                    item["timestamp"] = ev.timestamp
+                    item["message"] = (
+                        f"Kernel '{ev.name}' launched grid {ev.grid_dim} block {ev.block_dim}"
+                    )
                     events.append(item)
             for ev in gpu.get_transfer_log():
                 if since_cycle is None or ev.start_cycle >= since_cycle:
@@ -229,7 +231,8 @@ class GPUManager:
                     item["gpu_id"] = gpu_id
                     item["type"] = "transfer"
                     item["id"] = str(uuid4())
-                    item["timestamp"] = datetime.utcnow().isoformat()
+                    item["timestamp"] = ev.timestamp
+                    item["message"] = f"{ev.direction} transfer of {ev.size} bytes"
                     events.append(item)
             for sm in gpu.sms:
                 for ev in sm.get_divergence_log():
@@ -238,7 +241,10 @@ class GPUManager:
                         item["gpu_id"] = gpu_id
                         item["type"] = "divergence"
                         item["id"] = str(uuid4())
-                        item["timestamp"] = datetime.utcnow().isoformat()
+                        item["timestamp"] = ev.timestamp
+                        item["message"] = (
+                            f"Warp {ev.warp_id} divergence at PC {ev.pc}"
+                        )
                         events.append(item)
                 for ev in sm.get_block_event_log():
                     if since_cycle is None or ev.start_cycle >= since_cycle:
@@ -246,7 +252,10 @@ class GPUManager:
                         item["gpu_id"] = gpu_id
                         item["type"] = f"BLOCK_{ev.phase.upper()}"
                         item["id"] = str(uuid4())
-                        item["timestamp"] = datetime.utcnow().isoformat()
+                        item["timestamp"] = ev.timestamp
+                        item["message"] = (
+                            f"Block {ev.block_idx} {ev.phase} on SM {ev.sm_id}"
+                        )
                         events.append(item)
 
         events.sort(key=lambda e: e.get("start_cycle", 0))

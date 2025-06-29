@@ -44,3 +44,6 @@ def test_events_endpoint_returns_all():
         assert data == sorted(data, key=lambda e: e["start_cycle"])
         types = {ev["type"] for ev in data}
         assert {"kernel", "transfer", "divergence", "BLOCK_START", "BLOCK_END"} <= types
+        for ev in data:
+            assert "timestamp" in ev
+            assert "message" in ev

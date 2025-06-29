@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from datetime import datetime
 
 __all__ = ["TransferEvent"]
 
@@ -12,3 +13,4 @@ class TransferEvent:
     size: int
     start_cycle: int
     end_cycle: int
+    timestamp: str = field(default_factory=lambda: datetime.utcnow().isoformat())

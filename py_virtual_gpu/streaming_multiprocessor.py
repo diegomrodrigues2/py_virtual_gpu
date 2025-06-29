@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from queue import Queue
 from typing import List, Dict, Optional, TYPE_CHECKING
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from datetime import datetime
 
 from .shared_memory import SharedMemory  # type: ignore
 from .thread_block import ThreadBlock  # type: ignore
@@ -21,6 +22,7 @@ class BlockEvent:
     sm_id: int
     phase: str  # "start" or "end"
     start_cycle: int = 0
+    timestamp: str = field(default_factory=lambda: datetime.utcnow().isoformat())
 
 if TYPE_CHECKING:  # pragma: no cover - type hinting
     from .virtualgpu import VirtualGPU
@@ -35,6 +37,7 @@ class DivergenceEvent:
     mask_before: List[bool]
     mask_after: List[bool]
     start_cycle: int = 0
+    timestamp: str = field(default_factory=lambda: datetime.utcnow().isoformat())
 
 
 class StreamingMultiprocessor:

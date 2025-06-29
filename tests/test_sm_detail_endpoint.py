@@ -42,3 +42,5 @@ def test_sm_detail_divergence_log_size():
         assert data["counters"]["warp_divergences"] == len(data["divergence_log"])
         assert "block_event_log" in data
         assert "barrier_wait_ms" in data["counters"]
+        assert all("timestamp" in d for d in data["divergence_log"])
+        assert all("timestamp" in b for b in data["block_event_log"])

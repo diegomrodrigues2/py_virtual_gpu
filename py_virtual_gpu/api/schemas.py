@@ -19,6 +19,7 @@ class TransferRecord(BaseModel):
     size: int
     start_cycle: int
     end_cycle: int
+    timestamp: str
 
 
 class KernelLaunchRecord(BaseModel):
@@ -29,6 +30,7 @@ class KernelLaunchRecord(BaseModel):
     block_dim: tuple[int, int, int]
     start_cycle: int
     cycles: int
+    timestamp: str
 
 
 class AllocationRecord(BaseModel):
@@ -112,6 +114,7 @@ class DivergenceRecord(BaseModel):
     pc: int
     mask_before: list[bool]
     mask_after: list[bool]
+    timestamp: str
 
 
 class BlockEventRecord(BaseModel):
@@ -121,6 +124,7 @@ class BlockEventRecord(BaseModel):
     sm_id: int
     phase: str
     start_cycle: int
+    timestamp: str
 
 
 class SMDetailed(BaseModel):

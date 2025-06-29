@@ -28,7 +28,8 @@ export const KernelLogView: React.FC<{ gpuId: string }> = ({ gpuId }) => {
           <th className="pr-4">Name</th>
           <th className="pr-4">Grid</th>
           <th className="pr-4">Block</th>
-          <th>Start Cycle</th>
+          <th className="pr-4">Start Cycle</th>
+          <th>Timestamp</th>
         </tr>
       </thead>
       <tbody>
@@ -37,7 +38,8 @@ export const KernelLogView: React.FC<{ gpuId: string }> = ({ gpuId }) => {
             <td className="font-mono pr-4">{k.name}</td>
             <td className="pr-4">{k.grid_dim.join('x')}</td>
             <td className="pr-4">{k.block_dim.join('x')}</td>
-            <td>{k.start_cycle}</td>
+            <td className="pr-4">{k.start_cycle}</td>
+            <td>{new Date(k.timestamp).toLocaleString()}</td>
           </tr>
         ))}
       </tbody>
