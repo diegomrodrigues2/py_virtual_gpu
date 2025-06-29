@@ -28,6 +28,7 @@ class KernelLaunchRecord(BaseModel):
     grid_dim: tuple[int, int, int]
     block_dim: tuple[int, int, int]
     start_cycle: int
+    cycles: int
 
 
 class GlobalMemState(BaseModel):

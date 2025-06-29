@@ -96,6 +96,7 @@ class Warp:
                 addr_list.append(int(addr))
             self.memory_access(addr_list, size, space)
 
+        self.sm.account_instruction(inst)
         self.pc += 1
 
         # Check if we've reached a reconvergence point recorded on the SIMT
@@ -113,6 +114,7 @@ class Warp:
         return any(self.active_mask)
     def issue_instruction(self, inst: Instruction) -> None:
         """Issue ``inst`` to the active threads (conceptual stub)."""
+        self.sm.account_instruction(inst)
         self.pc += 1
 
     def memory_access(self, addr_list: List[int], size: int, space: str = "global") -> bytes:

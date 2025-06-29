@@ -48,6 +48,9 @@ class StreamingMultiprocessor:
         warp_size: int = 32,
         *,
         parent_gpu: Optional["VirtualGPU"] = None,
+        fp16_cycles: int = 2,
+        fp32_cycles: int = 4,
+        fp64_cycles: int = 8,
     ) -> None:
         """Initialize the SM with configuration parameters."""
         self.id: int = id
@@ -56,6 +59,9 @@ class StreamingMultiprocessor:
         self.shared_mem: SharedMemory = SharedMemory(shared_mem_size)
         self.max_registers_per_thread: int = max_registers_per_thread
         self.warp_size: int = warp_size
+        self.fp16_cycles = fp16_cycles
+        self.fp32_cycles = fp32_cycles
+        self.fp64_cycles = fp64_cycles
         self.schedule_policy: str = "round_robin"
         self.counters: Dict[str, int] = {
             "warps_executed": 0,
@@ -63,11 +69,51 @@ class StreamingMultiprocessor:
             "non_coalesced_accesses": 0,
             "bank_conflicts": 0,
             "barrier_wait_ms": 0,
+            "cycles": 0,
         }
         self.stats: Dict[str, int] = {"extra_cycles": 0}
         self.divergence_log: List[DivergenceEvent] = []
         self.block_log: List[BlockEvent] = []
         self.gpu = parent_gpu
+
+    # ------------------------------------------------------------------
+    # Cycle accounting
+    # ------------------------------------------------------------------
+    def _dtype_cycles(self, dtype: object) -> int:
+        """Return latency in cycles for the given ``dtype``."""
+
+        import numpy as np
+
+        if dtype is None:
+            return 0
+        try:
+            dt = np.dtype(dtype)
+        except Exception:
+            return 0
+        if dt == np.float16:
+            return self.fp16_cycles
+        if dt == np.float32:
+            return self.fp32_cycles
+        if dt == np.float64:
+            return self.fp64_cycles
+        return 0
+
+    def account_instruction(self, inst: Instruction) -> None:
+        """Update cycle counters for ``inst`` based on operand dtype."""
+
+        dtype = None
+        for op in inst.operands:
+            if hasattr(op, "dtype"):
+                dtype = getattr(op, "dtype")
+                break
+            if isinstance(op, type) and hasattr(op, "dtype"):
+                dtype = getattr(op, "dtype")
+                break
+        cycles = self._dtype_cycles(dtype)
+        if cycles:
+            self.counters["cycles"] += cycles
+            if self.gpu is not None:
+                self.gpu._cycle_counter += cycles
 
     # ------------------------------------------------------------------
     # Execution

@@ -6,6 +6,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 from py_virtual_gpu.streaming_multiprocessor import StreamingMultiprocessor
 from py_virtual_gpu.warp import Warp
+from py_virtual_gpu.dispatch import Instruction
+from py_virtual_gpu.types import Half, Float32, Float64
 
 
 class DummyThread:
@@ -105,3 +107,24 @@ def test_repr_contains_info():
     assert "id=7" in text
     assert "queue_size=0" in text
     assert "warps=0" in text
+
+
+def test_instruction_cycle_accounting():
+    sm = StreamingMultiprocessor(
+        id=3,
+        shared_mem_size=0,
+        max_registers_per_thread=0,
+        fp16_cycles=1,
+        fp32_cycles=2,
+        fp64_cycles=3,
+    )
+    w = Warp(0, [DummyThread(), DummyThread()], sm)
+
+    w.issue_instruction(Instruction("ADD", (Half(1.0),)))
+    assert sm.counters["cycles"] == 1
+
+    w.issue_instruction(Instruction("ADD", (Float32(1.0),)))
+    assert sm.counters["cycles"] == 3
+
+    w.issue_instruction(Instruction("ADD", (Float64(1.0),)))
+    assert sm.counters["cycles"] == 6
