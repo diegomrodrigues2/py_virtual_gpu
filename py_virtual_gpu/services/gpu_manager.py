@@ -53,6 +53,7 @@ class GPUManager:
             GlobalMemState,
             TransferRecord,
             GPUConfig,
+            AllocationRecord,
         )
 
         gpu = self.get_gpu(id)
@@ -80,6 +81,16 @@ class GPUManager:
             else 0,
         )
 
+        allocations = [
+            AllocationRecord(
+                offset=off,
+                size=meta[1],
+                dtype=meta[2].__name__ if meta[2] is not None else None,
+                label=meta[3],
+            )
+            for off, meta in gpu.alloc_metadata.items()
+        ]
+
         return GPUState(
             id=id,
             name=f"GPU {id}",
@@ -88,6 +99,7 @@ class GPUManager:
             transfer_log=transfer_log,
             sms=sms,
             overall_load=overall_load,
+            allocations=allocations,
         )
 
     def get_gpu_metrics(self, id: int):
@@ -181,6 +193,22 @@ class GPUManager:
 
         gpu = self.get_gpu(id)
         return [KernelLaunchRecord(**asdict(ev)) for ev in gpu.get_kernel_log()]
+
+    def get_gpu_allocations(self, id: int):
+        """Return active allocations for GPU ``id``."""
+
+        from ..api.schemas import AllocationRecord
+
+        gpu = self.get_gpu(id)
+        return [
+            AllocationRecord(
+                offset=off,
+                size=meta[1],
+                dtype=meta[2].__name__ if meta[2] is not None else None,
+                label=meta[3],
+            )
+            for off, meta in gpu.alloc_metadata.items()
+        ]
 
     def get_event_feed(self, since_cycle: int | None = None, limit: int = 100):
         """Return a global event feed aggregated from all GPUs."""
