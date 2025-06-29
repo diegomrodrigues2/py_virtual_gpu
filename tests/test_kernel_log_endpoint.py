@@ -37,3 +37,4 @@ def test_kernel_log_endpoint():
         assert data[0]["grid_dim"] == [1, 1, 1]
         assert data[0]["block_dim"] == [2, 2, 1]
         assert "cycles" in data[0]
+        assert "timestamp" in data[0]

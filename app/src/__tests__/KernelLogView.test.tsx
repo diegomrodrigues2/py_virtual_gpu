@@ -12,7 +12,13 @@ vi.mock('../services/gpuSimulatorService', () => ({
 const mockFetch = service.fetchKernelLog as unknown as ReturnType<typeof vi.fn>;
 
 const log: KernelLaunchRecord[] = [
-  { name: 'dummy', grid_dim: [1, 1, 1], block_dim: [2, 2, 1], start_cycle: 5 },
+  {
+    name: 'dummy',
+    grid_dim: [1, 1, 1],
+    block_dim: [2, 2, 1],
+    start_cycle: 5,
+    timestamp: '2025-06-29T12:00:00Z',
+  },
 ];
 
 describe('KernelLogView', () => {
@@ -23,5 +29,7 @@ describe('KernelLogView', () => {
     expect(screen.getByText('1x1x1')).toBeInTheDocument();
     expect(screen.getByText('2x2x1')).toBeInTheDocument();
     expect(screen.getByText('5')).toBeInTheDocument();
+    const ts = new Date(log[0].timestamp).toLocaleString();
+    expect(screen.getByText(ts)).toBeInTheDocument();
   });
 });

@@ -14,7 +14,8 @@ from .thread_block import ThreadBlock  # type: ignore  # noqa: F401
 from .memory_hierarchy import HostMemory, ConstantMemory
 from .transfer import TransferEvent
 from .types import Numeric
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from datetime import datetime
 
 
 def _execute_block_worker(
@@ -34,6 +35,7 @@ class KernelLaunchEvent:
     block_dim: Tuple[int, int, int]
     start_cycle: int
     cycles: int = 0
+    timestamp: str = field(default_factory=lambda: datetime.utcnow().isoformat())
 
 
 class VirtualGPU:
