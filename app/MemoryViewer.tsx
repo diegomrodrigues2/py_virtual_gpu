@@ -33,6 +33,11 @@ export const MemoryViewer: React.FC<{ slice: MemorySlice }> = ({ slice }) => {
           ))}
         </tbody>
       </table>
+      {slice.values && (
+        <div className="mt-2 text-xs font-mono">
+          <strong>Decoded:</strong> {slice.values.join(', ')}
+        </div>
+      )}
     </div>
   );
 };
