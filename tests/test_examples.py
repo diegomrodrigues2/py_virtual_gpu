@@ -2,6 +2,7 @@ import os
 import sys
 import importlib
 import ast
+import pytest
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -54,3 +55,10 @@ def test_vector_sum_atomic_example(capsys):
     mod.main()
     kernel, host = _parse_results(capsys.readouterr().out)
     assert kernel == host
+
+
+def test_mixed_precision_example(capsys):
+    mod = importlib.import_module("examples.mixed_precision")
+    mod.main()
+    kernel, host = _parse_results(capsys.readouterr().out)
+    assert pytest.approx(kernel, rel=1e-6) == host

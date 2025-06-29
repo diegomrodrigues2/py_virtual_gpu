@@ -44,6 +44,7 @@ gpu.set_constant(b"values")
 - Constant memory (`64 KiB` by default) available via `gpu = VirtualGPU.get_current(); gpu.read_constant(...)` or `thread.const_mem.read(...)`.
 - `Thread.alloc_local(size)` reserves bytes in `LocalMemory` for large kernel variables.
 - Pointers returned by `malloc` are `DevicePointer` objects that support arithmetic and indexing (`ptr + n`, `ptr[i]`, etc.) similar to CUDA C++.
+- Passing a `dtype` like `Half`, `Float32` or `Float64` to `malloc` (or using `malloc_type`) yields typed pointers. Elements read from such pointers are instances of those classes and support arithmetic with automatic promotion.
 - `atomicAdd`, `atomicSub`, `atomicCAS`, `atomicMax`, `atomicMin` and `atomicExchange` operate on `DevicePointer`. The same methods are also available on `SharedMemory` and `GlobalMemory`.
 - Kernel threads run as ``multiprocessing.Process`` to bypass the GIL. Use ``ThreadBlock.execute(..., use_threads=True)`` to fall back to ``threading.Thread`` if processes are not desired. On Windows, threads are automatically used instead of processes to avoid pickling issues. On Windows, threads are automatically used instead of processes to avoid pickling issues.
 
@@ -103,12 +104,14 @@ python examples/vector_mul.py
 python examples/matrix_mul.py
 python examples/reduction_sum.py
 python examples/reduction_sum_multi.py
+python examples/mixed_precision.py
 
 # start with API support to visualize in the UI
 python examples/vector_mul.py --api
 python examples/matrix_mul.py --api
 python examples/reduction_sum.py --api
 python examples/reduction_sum_multi.py --api
+python examples/mixed_precision.py --api
 ```
 
 When ``--api`` is used the script launches the FastAPI server in the background and registers the created GPU with the global manager. You can then run the UI from the `app` directory to inspect execution:

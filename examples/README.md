@@ -12,6 +12,7 @@ python examples/convolution_2d.py
 python examples/matrix_mul.py
 python examples/reduction_sum.py
 python examples/reduction_sum_multi.py
+python examples/mixed_precision.py
 ```
 
 Each program allocates memory on the virtual device, launches a kernel and prints
@@ -32,6 +33,7 @@ Then run an example with API support enabled:
 ```bash
 python examples/vector_mul.py --api
 python examples/matrix_mul.py --api
+python examples/mixed_precision.py --api
 ```
 
 Open ``http://localhost:5173`` to inspect the execution step by step through the
