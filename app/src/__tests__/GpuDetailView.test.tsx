@@ -117,14 +117,14 @@ describe('GpuDetailView', () => {
 
     render(<GpuDetailView gpu={gpu} />);
 
-    await user.selectOptions(screen.getByRole('combobox'), 'constant');
+    await user.selectOptions(screen.getAllByRole('combobox')[0], 'constant');
     await user.clear(screen.getByPlaceholderText('Offset'));
     await user.type(screen.getByPlaceholderText('Offset'), '4');
     await user.clear(screen.getByPlaceholderText('Size'));
     await user.type(screen.getByPlaceholderText('Size'), '1');
     await user.click(screen.getByRole('button', { name: /fetch/i }));
 
-    expect(mockFetchConstantSlice).toHaveBeenCalledWith('0', 4, 1);
+    expect(mockFetchConstantSlice).toHaveBeenCalledWith('0', 4, 1, undefined);
     expect(await screen.findByText('41')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /clear/i }));

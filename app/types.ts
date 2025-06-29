@@ -73,6 +73,7 @@ export interface MemorySlice {
   offset: number;
   size: number;
   data: string; // hex-encoded
+  values?: number[];
 }
 
 export interface SMDetailed {

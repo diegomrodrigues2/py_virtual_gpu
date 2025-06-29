@@ -126,9 +126,11 @@ export const fetchGlobalMemorySlice = async (
   gpuId: string,
   offset: number,
   size: number,
+  dtype?: 'half' | 'float32' | 'float64',
 ): Promise<MemorySlice> => {
+  const dtypeParam = dtype ? `&dtype=${dtype}` : '';
   return fetchJSON<MemorySlice>(
-    `${API_BASE}/gpus/${gpuId}/global_mem?offset=${offset}&size=${size}`,
+    `${API_BASE}/gpus/${gpuId}/global_mem?offset=${offset}&size=${size}${dtypeParam}`,
   );
 };
 
@@ -136,9 +138,11 @@ export const fetchConstantMemorySlice = async (
   gpuId: string,
   offset: number,
   size: number,
+  dtype?: 'half' | 'float32' | 'float64',
 ): Promise<MemorySlice> => {
+  const dtypeParam = dtype ? `&dtype=${dtype}` : '';
   return fetchJSON<MemorySlice>(
-    `${API_BASE}/gpus/${gpuId}/constant_mem?offset=${offset}&size=${size}`,
+    `${API_BASE}/gpus/${gpuId}/constant_mem?offset=${offset}&size=${size}${dtypeParam}`,
   );
 };
 

@@ -140,5 +140,6 @@ class MemorySlice(BaseModel):
     offset: int
     size: int
     data: str
+    values: list[float] | None = None
 
 

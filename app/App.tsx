@@ -146,6 +146,7 @@ export const GpuDetailView: React.FC<{ gpu: GPUState }> = ({ gpu }) => {
   const [offset, setOffset] = useState(0);
   const [size, setSize] = useState(64);
   const [memType, setMemType] = useState<'global' | 'constant'>('global');
+  const [dtype, setDtype] = useState<'' | 'half' | 'float32' | 'float64'>('');
   const [slice, setSlice] = useState<MemorySlice | null>(null);
   const [loading, setLoading] = useState(false);
   const [showKernelLog, setShowKernelLog] = useState(false);
@@ -155,8 +156,8 @@ export const GpuDetailView: React.FC<{ gpu: GPUState }> = ({ gpu }) => {
     try {
       const s =
         memType === 'global'
-          ? await fetchGlobalMemorySlice(gpu.id, offset, size)
-          : await fetchConstantMemorySlice(gpu.id, offset, size);
+          ? await fetchGlobalMemorySlice(gpu.id, offset, size, dtype || undefined)
+          : await fetchConstantMemorySlice(gpu.id, offset, size, dtype || undefined);
       setSlice(s);
     } catch (err) {
       console.error('Failed to fetch memory slice', err);
@@ -211,6 +212,16 @@ export const GpuDetailView: React.FC<{ gpu: GPUState }> = ({ gpu }) => {
                 className="bg-gray-700 p-1 rounded w-20 text-sm"
                 placeholder="Size"
               />
+              <select
+                value={dtype}
+                onChange={(e) => setDtype(e.target.value as '' | 'half' | 'float32' | 'float64')}
+                className="bg-gray-700 p-1 rounded text-sm"
+              >
+                <option value="">raw</option>
+                <option value="half">half</option>
+                <option value="float32">float32</option>
+                <option value="float64">float64</option>
+              </select>
               <button onClick={fetchSlice} className="px-2 py-1 bg-sky-600 rounded text-xs mr-2">
                 Fetch
               </button>

@@ -11,4 +11,11 @@ describe('MemoryViewer', () => {
     expect(screen.getAllByText('74').length).toBeGreaterThan(0);
     expect(screen.getByText('test')).toBeInTheDocument();
   });
+
+  it('shows decoded numeric values when provided', () => {
+    const slice: MemorySlice = { offset: 0, size: 4, data: Buffer.from('0100', 'hex').toString('hex'), values: [1] };
+    render(<MemoryViewer slice={slice} />);
+    expect(screen.getByText('Decoded:')).toBeInTheDocument();
+    expect(screen.getByText('1')).toBeInTheDocument();
+  });
 });
