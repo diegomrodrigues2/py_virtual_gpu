@@ -62,3 +62,10 @@ def test_mixed_precision_example(capsys):
     mod.main()
     kernel, host = _parse_results(capsys.readouterr().out)
     assert pytest.approx(kernel, rel=1e-6) == host
+
+
+def test_inspect_allocations_example(capsys):
+    mod = importlib.import_module("examples.inspect_allocations")
+    mod.main()
+    kernel, host = _parse_results(capsys.readouterr().out)
+    assert kernel == host
