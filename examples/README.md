@@ -13,11 +13,15 @@ python examples/matrix_mul.py
 python examples/reduction_sum.py
 python examples/reduction_sum_multi.py
 python examples/mixed_precision.py
+python examples/adam_basic.py
 python examples/inspect_allocations.py
 ```
 
 Each program allocates memory on the virtual device, launches a kernel and prints
 whether the result computed on the device matches the host computation.
+
+The `adam_basic.py` script demonstrates a single Adam optimizer step
+without bias correction.
 
 ### Visualizing via API and UI
 
