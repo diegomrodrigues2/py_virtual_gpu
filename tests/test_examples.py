@@ -93,3 +93,11 @@ def test_linear_regression_example(capsys):
     linear_regression_mse.main()
     kernel, host = _parse_results(capsys.readouterr().out)
     assert kernel == pytest.approx(host, rel=1e-6)
+
+
+def test_logistic_regression_example(capsys):
+    from examples import logistic_regression
+
+    logistic_regression.main()
+    kernel, host = _parse_results(capsys.readouterr().out)
+    assert kernel == pytest.approx(host, rel=1e-4)
