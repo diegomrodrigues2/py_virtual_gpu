@@ -404,6 +404,9 @@ class VirtualGPU:
         if self.pool is not None:
             self.pool.close()
             self.pool.join()
+            self.pool = None
+            if self.use_pool:
+                self.pool = Pool(processes=len(self.sms))
 
         for sm in self.sms:
             sm.fetch_and_execute()
