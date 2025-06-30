@@ -26,6 +26,19 @@ def _adam_step_kernel(
     corr2,
     n,
 ):
+    """Fused Adam update on ``n`` parameters.
+
+    Each thread reads the gradient for one parameter, updates its first and
+    second moment estimates (``m`` and ``v``), applies bias correction via
+    ``corr1`` and ``corr2``, and writes back the new parameter value in a
+    single kernel invocation.
+
+    Parameters correspond to the Adam formula components: device pointers for
+    parameters and gradients, moment buffers ``m`` and ``v``, the learning rate
+    ``lr``, decay coefficients ``beta1`` and ``beta2``, numerical stability
+    term ``eps``, and the precomputed correction factors ``corr1`` and
+    ``corr2``.
+    """
     i = blockIdx[0] * blockDim[0] + threadIdx[0]
     if i < n:
         g = grad_ptr[i]
