@@ -121,3 +121,50 @@ class Float64(Numeric):
     """Double-precision floating point number (fp64)."""
 
     dtype = np.float64
+
+
+def sqrt_numeric(value: Numeric) -> Numeric:
+    """Return the square root of ``value`` preserving its dtype."""
+
+    result = np.sqrt(_unwrap(value))
+    return _wrap(result, np.dtype(value.dtype))
+
+
+def sin_numeric(value: Numeric) -> Numeric:
+    """Return ``sin(value)`` preserving its dtype."""
+
+    result = np.sin(_unwrap(value))
+    return _wrap(result, np.dtype(value.dtype))
+
+
+def cos_numeric(value: Numeric) -> Numeric:
+    """Return ``cos(value)`` preserving its dtype."""
+
+    result = np.cos(_unwrap(value))
+    return _wrap(result, np.dtype(value.dtype))
+
+
+def exp_numeric(value: Numeric) -> Numeric:
+    """Return ``exp(value)`` preserving its dtype."""
+
+    result = np.exp(_unwrap(value))
+    return _wrap(result, np.dtype(value.dtype))
+
+
+def log_numeric(value: Numeric) -> Numeric:
+    """Return ``log(value)`` preserving its dtype."""
+
+    result = np.log(_unwrap(value))
+    return _wrap(result, np.dtype(value.dtype))
+
+
+__all__ = [
+    "Half",
+    "Float32",
+    "Float64",
+    "sqrt_numeric",
+    "sin_numeric",
+    "cos_numeric",
+    "exp_numeric",
+    "log_numeric",
+]

@@ -4,7 +4,16 @@ import numpy as np
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from py_virtual_gpu import Half, Float32, Float64
+from py_virtual_gpu import (
+    Half,
+    Float32,
+    Float64,
+    sqrt_numeric,
+    sin_numeric,
+    cos_numeric,
+    exp_numeric,
+    log_numeric,
+)
 
 
 def test_basic_arithmetic_and_rounding():
@@ -38,3 +47,30 @@ def test_conversion_helpers():
     a = Half(3.0)
     assert isinstance(a.to_float32(), Float32)
     assert isinstance(a.to_float64(), Float64)
+
+
+def test_sqrt_numeric():
+    val = Float32(4.0)
+    res = sqrt_numeric(val)
+    assert isinstance(res, Float32)
+    assert float(res) == float(np.sqrt(np.float32(4.0)))
+
+
+def test_trigonometric_and_exp_log():
+    val = Float32(np.pi / 2)
+    sin_res = sin_numeric(val)
+    assert isinstance(sin_res, Float32)
+    assert np.isclose(float(sin_res), 1.0)
+
+    cos_res = cos_numeric(Float32(0.0))
+    assert isinstance(cos_res, Float32)
+    assert np.isclose(float(cos_res), 1.0)
+
+    exp_res = exp_numeric(Float32(0.0))
+    assert isinstance(exp_res, Float32)
+    assert np.isclose(float(exp_res), 1.0)
+
+    log_res = log_numeric(Float32(1.0))
+    assert isinstance(log_res, Float32)
+    assert np.isclose(float(log_res), 0.0)
+
