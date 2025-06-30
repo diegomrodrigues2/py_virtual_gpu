@@ -12,7 +12,7 @@ from py_virtual_gpu.api.server import start_background_api
 @kernel
 def adam_step(threadIdx, blockIdx, blockDim, gridDim,
                param_ptr, grad_ptr, m_ptr, v_ptr,
-               lr, beta1, beta2, eps, n):
+               lr, beta1, beta2, eps, corr1, corr2, n):
     i = blockIdx[0] * blockDim[0] + threadIdx[0]
     if i < n:
         g = grad_ptr[i]
@@ -26,8 +26,10 @@ def adam_step(threadIdx, blockIdx, blockDim, gridDim,
         m_ptr[i] = m
         v_ptr[i] = v
 
-        denom = sqrt_numeric(v) + eps
-        param_ptr[i] = p - lr * (m / denom)
+        m_hat = m / corr1
+        v_hat = v / corr2
+        denom = sqrt_numeric(v_hat) + eps
+        param_ptr[i] = p - lr * (m_hat / denom)
 
 
 def main(with_api: bool = False) -> None:
@@ -61,33 +63,44 @@ def main(with_api: bool = False) -> None:
     beta1 = Float32(0.9)
     beta2 = Float32(0.999)
     eps = Float32(1e-8)
+    num_steps = 3
 
-    adam_step(
-        param_ptr,
-        grad_ptr,
-        m_ptr,
-        v_ptr,
-        lr,
-        beta1,
-        beta2,
-        eps,
-        n,
-        grid_dim=(1, 1, 1),
-        block_dim=(n, 1, 1),
-    )
-    gpu.synchronize()
+    for t in range(1, num_steps + 1):
+        corr1 = Float32(1.0 - beta1.value ** t)
+        corr2 = Float32(1.0 - beta2.value ** t)
+        adam_step(
+            param_ptr,
+            grad_ptr,
+            m_ptr,
+            v_ptr,
+            lr,
+            beta1,
+            beta2,
+            eps,
+            corr1,
+            corr2,
+            n,
+            grid_dim=(1, 1, 1),
+            block_dim=(n, 1, 1),
+        )
+        gpu.synchronize()
 
     result = [float(param_ptr[i]) for i in range(n)]
 
     host_params = params.copy()
     host_m = [0.0] * n
     host_v = [0.0] * n
-    for i in range(n):
-        g = grads[i]
-        host_m[i] = beta1.value * host_m[i] + (1.0 - beta1.value) * g
-        host_v[i] = beta2.value * host_v[i] + (1.0 - beta2.value) * (g * g)
-        denom = (host_v[i] ** 0.5) + eps.value
-        host_params[i] = host_params[i] - lr.value * (host_m[i] / denom)
+    for t in range(1, num_steps + 1):
+        corr1 = 1.0 - beta1.value ** t
+        corr2 = 1.0 - beta2.value ** t
+        for i in range(n):
+            g = grads[i]
+            host_m[i] = beta1.value * host_m[i] + (1.0 - beta1.value) * g
+            host_v[i] = beta2.value * host_v[i] + (1.0 - beta2.value) * (g * g)
+            m_hat = host_m[i] / corr1
+            v_hat = host_v[i] / corr2
+            denom = (v_hat ** 0.5) + eps.value
+            host_params[i] = host_params[i] - lr.value * (m_hat / denom)
 
     print("Kernel result:", result)
     print("Host result:", host_params)

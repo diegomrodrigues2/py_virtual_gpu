@@ -20,8 +20,8 @@ python examples/inspect_allocations.py
 Each program allocates memory on the virtual device, launches a kernel and prints
 whether the result computed on the device matches the host computation.
 
-The `adam_basic.py` script demonstrates a single Adam optimizer step
-without bias correction.
+The `adam_basic.py` script demonstrates a few Adam optimizer steps
+with bias correction enabled.
 
 ### Visualizing via API and UI
 
