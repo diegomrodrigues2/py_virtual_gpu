@@ -21,7 +21,8 @@ Each program allocates memory on the virtual device, launches a kernel and print
 whether the result computed on the device matches the host computation.
 
 The `adam_basic.py` script demonstrates a few Adam optimizer steps
-with bias correction enabled.
+with bias correction enabled. It runs Adam with FP16 state variables
+(`m` and `v`) while parameters remain in `Float32`.
 
 ### Visualizing via API and UI
 
