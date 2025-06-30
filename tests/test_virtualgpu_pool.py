@@ -58,3 +58,26 @@ def test_synchronize_closes_and_joins_pool(monkeypatch):
     gpu.launch_kernel(dummy, (1, 1, 1), (1, 1, 1))
     assert pool.calls == ["close", "join"]
 
+
+def test_sequential_launches_recreate_pool(monkeypatch):
+    pools = []
+
+    class TrackingPool(DummyPool):
+        def __init__(self):
+            super().__init__()
+            pools.append(self)
+
+    monkeypatch.setattr("py_virtual_gpu.virtualgpu.Pool", lambda processes: TrackingPool())
+    gpu = VirtualGPU(num_sms=1, global_mem_size=16, use_pool=True)
+
+    def dummy():
+        pass
+
+    gpu.launch_kernel(dummy, (1, 1, 1), (1, 1, 1))
+    gpu.synchronize()
+    gpu.launch_kernel(dummy, (1, 1, 1), (1, 1, 1))
+
+    # Two separate pools should have been created for each launch
+    assert len(pools) == 2
+    assert sum(len(p.apply_async_calls) for p in pools) == 2
+
