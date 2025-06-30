@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Tuple
 
 from .kernel import kernel
-from .types import Float32, sqrt_numeric
+from .types import Float32, Half, sqrt_numeric
 
 
 @kernel
@@ -42,18 +42,25 @@ def _adam_step_kernel(
     i = blockIdx[0] * blockDim[0] + threadIdx[0]
     if i < n:
         g = grad_ptr[i]
-        m = m_ptr[i]
-        v = v_ptr[i]
+        m = m_ptr[i].to_float32()
+        v = v_ptr[i].to_float32()
         p = param_ptr[i]
 
-        m = beta1 * m + (Float32(1.0) - beta1) * g
-        v = beta2 * v + (Float32(1.0) - beta2) * (g * g)
+        m_new = beta1 * m + (Float32(1.0) - beta1) * g
+        v_new = beta2 * v + (Float32(1.0) - beta2) * (g * g)
 
-        m_ptr[i] = m
-        v_ptr[i] = v
+        if m_ptr.dtype is Half:
+            m_ptr[i] = Half(float(m_new))
+        else:
+            m_ptr[i] = m_new
 
-        m_hat = m / corr1
-        v_hat = v / corr2
+        if v_ptr.dtype is Half:
+            v_ptr[i] = Half(float(v_new))
+        else:
+            v_ptr[i] = v_new
+
+        m_hat = m_new / corr1
+        v_hat = v_new / corr2
         denom = sqrt_numeric(v_hat) + eps
         param_ptr[i] = p - lr * (m_hat / denom)
 
