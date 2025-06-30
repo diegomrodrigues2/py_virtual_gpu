@@ -1,20 +1,15 @@
 import os
 import sys
+import pytest
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from py_virtual_gpu import VirtualGPU, Float32
 from py_virtual_gpu.optimizers import adam_step
 from py_virtual_gpu.services import get_gpu_manager
-from py_virtual_gpu.api.server import start_background_api
 
 
-def main(with_api: bool = False) -> None:
-    if with_api:
-        api_thread, stop_api = start_background_api()
-    else:
-        api_thread = stop_api = None
-
+def test_adam_step_helper():
     n = 4
     params = [1.0, 2.0, 3.0, 4.0]
     grads = [0.1, -0.2, 0.3, -0.4]
@@ -30,9 +25,7 @@ def main(with_api: bool = False) -> None:
 
     for i, v in enumerate(params):
         param_ptr[i] = Float32(v)
-    for i, v in enumerate(grads):
-        grad_ptr[i] = Float32(v)
-    for i in range(n):
+        grad_ptr[i] = Float32(grads[i])
         m_ptr[i] = Float32(0.0)
         v_ptr[i] = Float32(0.0)
 
@@ -59,7 +52,7 @@ def main(with_api: bool = False) -> None:
         )
         gpu.synchronize()
 
-    result = [float(param_ptr[i]) for i in range(n)]
+    kernel_res = [float(param_ptr[i]) for i in range(n)]
 
     host_params = params.copy()
     host_m = [0.0] * n
@@ -76,17 +69,4 @@ def main(with_api: bool = False) -> None:
             denom = (v_hat ** 0.5) + eps.value
             host_params[i] = host_params[i] - lr.value * (m_hat / denom)
 
-    print("Kernel result:", result)
-    print("Host result:", host_params)
-
-    if stop_api:
-        stop_api()
-
-
-if __name__ == "__main__":
-    import argparse
-
-    parser = argparse.ArgumentParser(description="Basic Adam optimizer example")
-    parser.add_argument("--api", action="store_true", help="start API server while running")
-    args = parser.parse_args()
-    main(with_api=args.api)
+    assert kernel_res == pytest.approx(host_params)

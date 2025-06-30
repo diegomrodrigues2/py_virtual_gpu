@@ -19,6 +19,7 @@ from .types import (
     exp_numeric,
     log_numeric,
 )
+from .optimizers import adam_step
 from .dispatch import Instruction, SIMTStack
 from .transfer import TransferEvent
 from .errors import SynchronizationError
@@ -94,5 +95,6 @@ __all__ = [
     "cos_numeric",
     "exp_numeric",
     "log_numeric",
+    "adam_step",
 ]
 
