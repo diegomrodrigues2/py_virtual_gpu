@@ -17,4 +17,5 @@ include = ["py_virtual_gpu*"]
 
 [project.optional-dependencies]
 # Include httpx so FastAPI's TestClient works out of the box
-api = ["fastapi", "uvicorn[standard]", "httpx"]
+# Pin httpx below 0.24 for compatibility with our API tests
+api = ["fastapi", "uvicorn[standard]", "httpx<0.24"]
