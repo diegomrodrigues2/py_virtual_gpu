@@ -167,6 +167,10 @@ Before running the test suite install the package with the optional dependencies
 pip install -e .[api]
 ```
 
+The API extras include `httpx`, which is pinned below version 0.24 for
+compatibility. This requirement is specified in both `pyproject.toml` and
+`requirements.txt`.
+
 Then install the development packages listed in `requirements.txt`:
 
 ```bash
