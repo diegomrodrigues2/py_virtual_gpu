@@ -14,6 +14,7 @@ python examples/reduction_sum.py
 python examples/reduction_sum_multi.py
 python examples/mixed_precision.py
 python examples/adam_basic.py
+python examples/linear_regression_mse.py
 python examples/inspect_allocations.py
 ```
 
