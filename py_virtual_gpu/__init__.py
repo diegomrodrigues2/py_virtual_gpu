@@ -9,7 +9,16 @@ from .warp import Warp, is_coalesced
 from .sync import syncthreads
 from .fence import threadfence_block, threadfence, threadfence_system
 from .warp_utils import shfl_sync, ballot_sync
-from .types import Half, Float32, Float64
+from .types import (
+    Half,
+    Float32,
+    Float64,
+    sqrt_numeric,
+    sin_numeric,
+    cos_numeric,
+    exp_numeric,
+    log_numeric,
+)
 from .dispatch import Instruction, SIMTStack
 from .transfer import TransferEvent
 from .errors import SynchronizationError
@@ -80,5 +89,10 @@ __all__ = [
     "Half",
     "Float32",
     "Float64",
+    "sqrt_numeric",
+    "sin_numeric",
+    "cos_numeric",
+    "exp_numeric",
+    "log_numeric",
 ]
 

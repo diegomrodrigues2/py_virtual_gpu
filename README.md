@@ -45,6 +45,7 @@ gpu.set_constant(b"values")
 - `Thread.alloc_local(size)` reserves bytes in `LocalMemory` for large kernel variables.
 - Pointers returned by `malloc` are `DevicePointer` objects that support arithmetic and indexing (`ptr + n`, `ptr[i]`, etc.) similar to CUDA C++.
 - Passing a `dtype` like `Half`, `Float32` or `Float64` to `malloc` (or using `malloc_type`) yields typed pointers. Elements read from such pointers are instances of those classes and support arithmetic with automatic promotion.
+- Helper math functions `sqrt_numeric`, `sin_numeric`, `cos_numeric`, `exp_numeric` and `log_numeric` operate on these typed numbers while preserving their dtype.
 - A `label` string can be supplied to `malloc` to name the allocation. When the API server is running these labels appear in the dashboard's allocations table so buffers are easier to identify.
 - `atomicAdd`, `atomicSub`, `atomicCAS`, `atomicMax`, `atomicMin` and `atomicExchange` operate on `DevicePointer`. The same methods are also available on `SharedMemory` and `GlobalMemory`.
 - Kernel threads run as ``multiprocessing.Process`` to bypass the GIL. Use ``ThreadBlock.execute(..., use_threads=True)`` to fall back to ``threading.Thread`` if processes are not desired. On Windows, threads are automatically used instead of processes to avoid pickling issues. On Windows, threads are automatically used instead of processes to avoid pickling issues.
