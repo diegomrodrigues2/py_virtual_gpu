@@ -70,3 +70,55 @@ def test_adam_step_helper():
             host_params[i] = host_params[i] - lr.value * (m_hat / denom)
 
     assert kernel_res == pytest.approx(host_params)
+
+
+def test_adam_step_kernel_logging():
+    """Ensure adam_step records a kernel launch for each invocation."""
+    n = 2
+    params = [1.0, 2.0]
+    grads = [0.5, -0.25]
+
+    gpu = VirtualGPU(num_sms=0, global_mem_size=64)
+    get_gpu_manager().add_gpu(gpu)
+    VirtualGPU.set_current(gpu)
+
+    param_ptr = gpu.malloc(n, dtype=Float32)
+    grad_ptr = gpu.malloc(n, dtype=Float32)
+    m_ptr = gpu.malloc(n, dtype=Float32)
+    v_ptr = gpu.malloc(n, dtype=Float32)
+
+    for i in range(n):
+        param_ptr[i] = Float32(params[i])
+        grad_ptr[i] = Float32(grads[i])
+        m_ptr[i] = Float32(0.0)
+        v_ptr[i] = Float32(0.0)
+
+    lr = Float32(0.01)
+    beta1 = Float32(0.9)
+    beta2 = Float32(0.999)
+    eps = Float32(1e-8)
+
+    num_steps = 3
+    prev_len = 0
+    for t in range(1, num_steps + 1):
+        adam_step(
+            param_ptr,
+            grad_ptr,
+            m_ptr,
+            v_ptr,
+            lr,
+            beta1,
+            beta2,
+            eps,
+            t,
+            n,
+            grid_dim=(1, 1, 1),
+            block_dim=(n, 1, 1),
+        )
+        gpu.synchronize()
+
+        log = gpu.get_kernel_log()
+        assert len(log) == prev_len + 1
+        prev_len = len(log)
+
+    assert len(gpu.get_kernel_log()) == num_steps
