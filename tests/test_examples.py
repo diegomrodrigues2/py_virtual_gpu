@@ -85,3 +85,11 @@ def test_adam_basic_example(capsys):
     adam_basic.main()
     kernel, host = _parse_results(capsys.readouterr().out)
     assert kernel == pytest.approx(host)
+
+
+def test_linear_regression_example(capsys):
+    from examples import linear_regression_mse
+
+    linear_regression_mse.main()
+    kernel, host = _parse_results(capsys.readouterr().out)
+    assert kernel == pytest.approx(host, rel=1e-6)
