@@ -13,7 +13,15 @@ def _parse_results(output: str):
         if line.startswith("Kernel result:"):
             kernel = ast.literal_eval(line.split(":", 1)[1].strip())
         if line.startswith("Host result:"):
-            host = ast.literal_eval(line.split(":", 1)[1].strip())
+            text = line.split(":", 1)[1].strip()
+            if "np.float" in text:
+                text = (
+                    text.replace("np.float16(", "")
+                    .replace("np.float32(", "")
+                    .replace("np.float64(", "")
+                    .replace(")", "")
+                )
+            host = ast.literal_eval(text)
     return kernel, host
 
 
@@ -69,3 +77,10 @@ def test_inspect_allocations_example(capsys):
     mod.main()
     kernel, host = _parse_results(capsys.readouterr().out)
     assert kernel == host
+
+
+def test_adam_basic_example(capsys):
+    mod = importlib.import_module("examples.adam_basic")
+    mod.main()
+    kernel, host = _parse_results(capsys.readouterr().out)
+    assert pytest.approx(kernel, rel=1e-6) == host
