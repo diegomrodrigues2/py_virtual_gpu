@@ -101,3 +101,11 @@ def test_logistic_regression_example(capsys):
     logistic_regression.main()
     kernel, host = _parse_results(capsys.readouterr().out)
     assert kernel == pytest.approx(host, rel=1e-4)
+
+
+def test_sin_mlp_example(capsys):
+    from examples import sin_mlp
+
+    sin_mlp.main()
+    kernel, host = _parse_results(capsys.readouterr().out)
+    assert kernel == pytest.approx(host, rel=1e-3)

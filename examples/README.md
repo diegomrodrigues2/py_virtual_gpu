@@ -16,6 +16,7 @@ python examples/mixed_precision.py
 python examples/adam_basic.py
 python examples/linear_regression_mse.py
 python examples/logistic_regression.py
+python examples/sin_mlp.py
 python examples/inspect_allocations.py
 ```
 
