@@ -27,6 +27,15 @@ graph TD
 
 The `VirtualGPU` distributes blocks to the SMs which in turn spawn warps and threads to run a kernel.
 
+## Repository Structure
+
+- `py_virtual_gpu/` – core simulation library and GPU components
+- `py_virtual_gpu/api/` – FastAPI server providing the HTTP API
+- `app/` – React dashboard for visualizing GPU state
+- `examples/` – runnable demonstrations of kernels and utilities
+- `docs/` – architecture notes and additional documentation
+- `tests/` – unit tests for the simulator and API
+
 ## Memory Hierarchy
 
 Registers, `SharedMemory`, `LocalMemory`, `ConstantMemory` and `GlobalMemory` are modeled with conceptual latency. Constant values can be loaded with `gpu.set_constant`:
